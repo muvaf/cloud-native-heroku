@@ -45,14 +45,14 @@ jobs:
           builder: ${{ steps.buildx.outputs.name }}
           context: .
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: ghcr.io/${{ github.repository }}:${{ github.sha }}
           labels: ${{ steps.meta.outputs.labels }}
           platforms: linux/amd64,linux/arm64
       
       - name: Update the image tag in Helm chart
         env:
-          IMAGE_DIGEST: ${{ steps.build-push.outputs.digest }}
-        run: sed -i "s|%%DIGEST%%|${IMAGE_DIGEST}|g" chart/values.yaml
+          IMAGE_TAG: ${{ github.sha }}
+        run: sed -i "s|%%TAG%%|${IMAGE_TAG}|g" chart/values.yaml
 
       - name: Install Helm
         uses: azure/setup-helm@v3

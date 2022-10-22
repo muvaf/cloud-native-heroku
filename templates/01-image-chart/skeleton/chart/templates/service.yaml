@@ -26,6 +26,6 @@ spec:
     spec:
       containers:
         - name: hello-world
-          image: ghcr.io/${{ values.githubRepositoryOrg }}/${{ values.githubRepositoryName }}@{% raw %}{{ .Values.digest }}{% endraw %}
+          image: ghcr.io/${{ values.githubRepositoryOrg }}/${{ values.githubRepositoryName }}:{% raw %}{{ .Values.image.tag }}{% endraw %}
           ports:
             - name: http
