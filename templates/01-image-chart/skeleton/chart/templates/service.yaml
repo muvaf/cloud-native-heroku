@@ -29,3 +29,4 @@ spec:
           image: ghcr.io/${{ values.githubRepositoryOrg }}/${{ values.githubRepositoryName }}:{% raw %}{{ .Values.image.tag }}{% endraw %}
           ports:
             - name: http
+              containerPort: 8080

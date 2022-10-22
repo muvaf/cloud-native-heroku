@@ -337,3 +337,26 @@ https://github.com/muvaf/cloud-native-heroku/blob/main/templates/01-image-chart/
 Go back to creation page and try out our new software template. Once Backstage
 is done, you should see a Github Action your repo running and it will result in
 two container images pushed.
+
+![Github packages example](assets/github-packages.png)
+
+Well, let's give it a try!
+
+Click on the chart package and get the full image path to install with Helm.
+```bash
+helm -n testing install helloworld oci://ghcr.io/muvaf/muvaf-kubecon-testing-chart --version 0.1.0 --create-namespace --wait
+```
+```bash
+kubectl get pods -n testing
+kubectl get services -n testing
+```
+```bash
+kubectl port-forward --namespace=testing svc/hello-world 9090:80
+```
+
+If you see the usual page, congrats!
+
+Clean up.
+```bash
+kubectl delete namespace testing
+```
