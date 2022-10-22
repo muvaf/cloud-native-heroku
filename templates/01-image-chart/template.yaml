@@ -58,6 +58,8 @@ spec:
         description: This is ${{ parameters.name }}
         repoUrl: ${{ parameters.repoUrl }}
         repoVisibility: public
+        defaultBranch: main
+        protectDefaultBranch: false
 
     - id: register
       name: Register
