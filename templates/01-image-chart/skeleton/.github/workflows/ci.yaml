@@ -1,12 +1,13 @@
-name: Create and publish a Docker image
+{% raw %}
+name: Continuous Integration
 
 on:
   push:
     branches: ['main']
 
 jobs:
-  build-and-push-image:
-    runs-on: ubuntu:22.04
+  ci:
+    runs-on: ubuntu-20.04
     permissions:
       contents: read
       packages: write
@@ -36,18 +37,22 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          platforms: linux/amd64,linux/arm64
       
       - name: Update the image tag in Helm chart
         env:
           IMAGE_DIGEST: ${{ steps.build-push.outputs.digest }}
-        run: sed -i "s|%%TAG%%|${IMAGE_DIGEST}|g" chart/values.yaml
+        run: sed -i "s|%%TAG%%|${IMAGE_DIGEST##*:}|g" chart/values.yaml
 
-      - name: Build and push Helm chart OCI image
-        uses: bsord/helm-push@4.2.0
+      - name: Install Helm binary
+        uses: azure/setup-helm@v3
         with:
-          useOCIRegistry: true
-          registry-url:  oci://ghcr.io/${{ github.repository }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-          force: true
-          chart-folder: chart
+          version: 'v3.10.0'
+
+      - name: Publish Helm chart to GHCR
+        env:
+          IMAGE_BASE_URL: ghcr.io/${{ github.repository_owner }}
+        run: |
+          helm package chart --version 0.1.0
+          helm push $(find . -iname '*-0.1.0.tgz') oci://${IMAGE_BASE_URL}
+{% endraw %}
