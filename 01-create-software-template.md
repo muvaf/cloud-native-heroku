@@ -23,12 +23,12 @@ mkdir -p templates/00-only-github
 We'll create the following template object which just creates a repo and
 bootstraps it with the content in `skeleton` folder.
 ```yaml
-# Content of templates/00-only-github/skeleton
+# Content of templates/00-only-github/skeleton/template.yaml
 apiVersion: scaffolder.backstage.io/v1beta3
 kind: Template
 metadata:
-  name: bootstrap-nodejs-repo
-  title: Bootstrap Nodejs Repo
+  name: hello-world-on-kubernetes
+  title: Hello World on Kubernetes
 spec:
   owner: muvaf/kubecon-na-2022
   type: service
@@ -73,15 +73,20 @@ spec:
         values:
           serviceName: ${{ parameters.serviceName }}
           owner: ${{ parameters.owner }}
+          githubRepositoryOrg: ${{ (parameters.repoUrl | parseRepoUrl).owner }}
+          githubRepositoryName: ${{ (parameters.repoUrl | parseRepoUrl).repo }}
 
     - id: publish
       name: Publish
       action: publish:github
       input:
         allowedHosts: ['github.com']
-        description: This is ${{ parameters.name }}
+        description: This is ${{ parameters.serviceName }}
         repoUrl: ${{ parameters.repoUrl }}
         repoVisibility: public
+        defaultBranch: main
+        protectDefaultBranch: false
+        requireCodeOwnerReviews: false
 
     - id: register
       name: Register
@@ -96,9 +101,8 @@ In `skeleton` folder, we'll have our very simple hello world application.
 mkdir -p templates/00-only-github/skeleton
 ```
 
-A `server.js` and `package.json` is all we need for NodeJS to work. A
-`Dockerfile` to build an image and a `catalog-info.yaml` for Backstage to
-identify the application will be there.
+A `server.js` and `package.json` is all we need for NodeJS to work. A 
+`catalog-info.yaml` for Backstage to identify the application will be there.
 ```yaml
 # Content of templates/00-only-github/skeleton/catalog-info.yaml
 apiVersion: backstage.io/v1alpha1
@@ -109,18 +113,6 @@ spec:
   type: service
   lifecycle: experimental
   owner: ${{values.owner | dump}}
-```
-```dockerfile
-# Content of templates/00-only-github/skeleton/Dockerfile
-FROM node:16
-
-WORKDIR /usr/src/app
-
-COPY package*.json ./
-RUN npm install
-
-COPY server.js .
-CMD [ "node", "server.js" ]
 ```
 Content of `templates/00-only-github/skeleton/package.json`
 ```json
@@ -173,6 +165,18 @@ new repo.
 
 ![Hello world template for Backstage](assets/only-github-instance-created.png)
 
+Clone this new repository and give it a try!
+```bash
+git clone https://github.com/muvaf/muvaftesting.git
+cd muvaftesting
+```
+```bash
+npm install
+```
+```bash
+npm start
+```
+
 ## Add Image and Helm Chart
 
 In this template we will add image building capabilities and a Helm chart that
@@ -190,7 +194,29 @@ metadata:
   title: Hello World on Kubernetes
 ```
 
-Let's add a basic Helm chart.
+Create a `Dockerfile` for our image.
+```dockerfile
+# Content of templates/00-only-github/skeleton/Dockerfile
+FROM node:16-alpine
+
+WORKDIR /usr/src/app
+
+COPY package*.json ./
+RUN npm install
+
+COPY server.js .
+CMD [ "node", "server.js" ]
+```
+
+Let's give it a try to make sure it's all tight.
+```bash
+docker build --tag hello:v0.1.0 .
+```
+```bash
+docker run -p 8080:8080 hello:v0.1.0
+```
+
+Once confirmed, let's move on to adding a Helm chart.
 ```bash
 mkdir -p templates/01-image-chart/skeleton/chart
 ```
@@ -198,10 +224,13 @@ It will have chart metadata and basic `Deployment` and `Service` definitions.
 ```bash
 mkdir -p templates/01-image-chart/skeleton/chart/templates
 ```
+
+As you will notice, we need to use `{% raw %}` to open and `{% endraw %}` to
+close what Backstage shouldn't touch so that Helm templates are not considered.
 ```yaml
 # Content of templates/01-image-chart/skeleton/chart/Chart.yaml
 apiVersion: v2
-name: ${{ values.serviceName }}
+name: ${{ values.githubRepositoryName }}-chart
 description: A Helm chart for ${{ values.serviceName }} owned by ${{ values.owner }}
 type: application
 version: 0.1.0
@@ -209,9 +238,9 @@ appVersion: "1.16.0"
 ```
 ```yaml
 # Content of templates/01-image-chart/skeleton/chart/values.yaml
-registry: ghcr.io
-image: ${{ values.githubRepositoryOrg }}/${{ values.githubRepositoryName }}
-tag: v0.1.0
+image:
+  # To be replaced in-place before publishing or installation.
+  tag: "%%TAG%%"
 ```
 ```yaml
 # Content of templates/01-image-chart/skeleton/chart/templates/service.yaml
@@ -243,7 +272,7 @@ spec:
     spec:
       containers:
         - name: hello-world
-          image: ${{ .Values.image.registry }}/${{ .Values.image.registry }}:{{ .Chart.Version }}
+          image: ghcr.io/${{ values.githubRepositoryOrg }}/${{ values.githubRepositoryName }}:{% raw %}{{ .Values.image.tag }}{% endraw %}
           ports:
             - name: http
 ```
@@ -296,3 +325,15 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 ```
+
+Once all done, create a new commit and push it.
+
+Add our new template to Backstage in http://127.0.0.1:7007/catalog-import
+by providing the path to our new `template.yaml` file in Github.
+```
+https://github.com/muvaf/cloud-native-heroku/blob/main/templates/01-image-chart/template.yaml
+```
+
+Go back to creation page and try out our new software template. Once Backstage
+is done, you should see a Github Action your repo running and it will result in
+two container images pushed.

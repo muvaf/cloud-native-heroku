@@ -1,8 +1,8 @@
 apiVersion: scaffolder.backstage.io/v1beta3
 kind: Template
 metadata:
-  name: bootstrap-nodejs-repo
-  title: Bootstrap Nodejs Repo
+  name: hello-world-on-kubernetes
+  title: Hello World on Kubernetes
 spec:
   owner: muvaf/kubecon-na-2022
   type: service
@@ -47,15 +47,20 @@ spec:
         values:
           serviceName: ${{ parameters.serviceName }}
           owner: ${{ parameters.owner }}
+          githubRepositoryOrg: ${{ (parameters.repoUrl | parseRepoUrl).owner }}
+          githubRepositoryName: ${{ (parameters.repoUrl | parseRepoUrl).repo }}
 
     - id: publish
       name: Publish
       action: publish:github
       input:
         allowedHosts: ['github.com']
-        description: This is ${{ parameters.name }}
+        description: This is ${{ parameters.serviceName }}
         repoUrl: ${{ parameters.repoUrl }}
         repoVisibility: public
+        defaultBranch: main
+        protectDefaultBranch: false
+        requireCodeOwnerReviews: false
 
     - id: register
       name: Register
