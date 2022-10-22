@@ -47,8 +47,8 @@ spec:
         values:
           serviceName: ${{ parameters.serviceName }}
           owner: ${{ parameters.owner }}
-          githubRepositoryOrg: ${{ parameters.githubRepositoryOrg }}
-          githubRepositoryName: ${{ parameters.githubRepositoryName }}
+          githubRepositoryOrg: ${{ (parameters.repoUrl | parseRepoUrl).owner }}
+          githubRepositoryName: ${{ (parameters.repoUrl | parseRepoUrl).repo }}
 
     - id: publish
       name: Publish
