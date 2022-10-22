@@ -60,6 +60,7 @@ spec:
         repoVisibility: public
         defaultBranch: main
         protectDefaultBranch: false
+        requireCodeOwnerReviews: false
 
     - id: register
       name: Register
