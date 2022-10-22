@@ -1,5 +1,2 @@
-registry: ghcr.io
-image: ${{ values.githubRepositoryOrg }}/${{ values.githubRepositoryName }}
-
 # To be replaced in-place before publishing or installation.
 tag: "%%TAG%%"
