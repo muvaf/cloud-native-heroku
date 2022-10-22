@@ -1,5 +1,5 @@
 apiVersion: v2
-name: ${{ values.githubRepositoryName }}
+name: ${{ values.githubRepositoryName }}-chart
 description: A Helm chart for ${{ values.serviceName }} owned by ${{ values.owner }}
 type: application
 version: 0.1.0
