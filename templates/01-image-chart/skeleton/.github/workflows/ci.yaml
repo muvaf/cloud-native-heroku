@@ -52,9 +52,9 @@ jobs:
       - name: Update the image tag in Helm chart
         env:
           IMAGE_DIGEST: ${{ steps.build-push.outputs.digest }}
-        run: sed -i "s|%%TAG%%|${IMAGE_DIGEST##*:}|g" chart/values.yaml
+        run: sed -i "s|%%DIGEST%%|${IMAGE_DIGEST}|g" chart/values.yaml
 
-      - name: Install Helm binary
+      - name: Install Helm
         uses: azure/setup-helm@v3
         with:
           version: 'v3.10.0'

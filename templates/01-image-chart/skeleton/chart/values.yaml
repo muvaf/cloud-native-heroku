@@ -1,2 +1,3 @@
 # To be replaced in-place before publishing or installation.
-tag: "%%TAG%%"
+image:
+  digest: "%%DIGEST%%"
