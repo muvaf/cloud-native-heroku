@@ -5,8 +5,14 @@ Stack"][talk-link] by Muvaffak Onus, Upbound & Sidarta Aguiar de Oliveira, Grupo
 
 You can follow the guide in the following order:
 1. [00-installation.md](00-installation.md): Install Backstage, ArgoCD and Crossplane.
-1. [01-create-software-template.md](01-create-software-template.md): Creation of
-   your own software template to be used in Backstage.
+1. [01-hello-world.md](01-hello-world.md): A hello world software template for
+   Backstage.
+1. [02-image-and-chart.md](02-image-and-chart.md): Add image publishing and a
+   Helm chart to our software template.
+1. [03-argocd.md](03-argocd.md): Continuously deploy our service instance right
+   after creation using ArgoCD.
+1. [04-crossplane.md](04-crossplane.md): Add infrastructure provisioning
+   capabilities for our service.
 
 
 [talk-link]: https://kccncna2022.sched.com/event/b0d8e5d397fe9a2e61ff0434524d3af2
