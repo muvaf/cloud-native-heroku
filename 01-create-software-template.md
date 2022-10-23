@@ -177,6 +177,8 @@ npm install
 npm start
 ```
 
+If you see a page in http://127.0.0.1:8080 , congrats! 🎉
+
 ## Add Image and Helm Chart
 
 In this template we will add image building capabilities and a Helm chart that
@@ -216,7 +218,9 @@ docker build --tag hello:v0.1.0 .
 docker run -p 8080:8080 hello:v0.1.0
 ```
 
-Once confirmed, let's move on to adding a Helm chart.
+If you see the page at http://127.0.0.1:8080, congrats! 🎉
+
+Let's move on to adding a Helm chart.
 ```bash
 mkdir -p templates/01-image-chart/skeleton/chart
 ```
@@ -287,15 +291,16 @@ mkdir -p templates/01-image-chart/.github/workflows
 ```
 ```yaml
 # Content of templates/01-image-chart/skeleton/.github/workflows/ci.yaml
-name: Create and publish a Docker image
+{% raw %}
+name: Continuous Integration
 
 on:
   push:
     branches: ['main']
 
 jobs:
-  build-and-push-image:
-    runs-on: ubuntu:22.04
+  ci:
+    runs-on: ubuntu-20.04
     permissions:
       contents: read
       packages: write
@@ -304,8 +309,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Log in to the Container registry
-        uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
+      - name: Setup QEMU
+        uses: docker/setup-qemu-action@v1
+        with:
+          platforms: arm64
+
+      - name: Setup Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Log in to Github Container Registry
+        uses: docker/login-action@v2
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -313,17 +327,38 @@ jobs:
 
       - name: Extract metadata (tags, labels) for Docker
         id: meta
-        uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
+        uses: docker/metadata-action@v4
         with:
           images: ghcr.io/${{ github.repository }}
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
+        id: build-push
+        uses: docker/build-push-action@v3
         with:
+          builder: ${{ steps.buildx.outputs.name }}
           context: .
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: ghcr.io/${{ github.repository }}:${{ github.sha }}
           labels: ${{ steps.meta.outputs.labels }}
+          platforms: linux/amd64,linux/arm64
+      
+      - name: Update the image tag in Helm chart
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+        run: sed -i "s|%%TAG%%|${IMAGE_TAG}|g" chart/values.yaml
+
+      - name: Install Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: 'v3.10.0'
+
+      - name: Publish Helm chart to GHCR
+        env:
+          IMAGE_BASE_URL: ghcr.io/${{ github.repository_owner }}
+        run: |
+          helm package chart --version 9.9.9
+          helm push $(find . -iname '*-chart-9.9.9.tgz') oci://${IMAGE_BASE_URL}
+{% endraw %}
 ```
 
 Once all done, create a new commit and push it.
@@ -344,7 +379,7 @@ Well, let's give it a try!
 
 Click on the chart package and get the full image path to install with Helm.
 ```bash
-helm -n testing install helloworld oci://ghcr.io/muvaf/muvaf-kubecon-testing-chart --version 0.1.0 --create-namespace --wait
+helm -n testing install helloworld oci://ghcr.io/muvaf/muvaf-kubecon-testing-chart --version 9.9.9 --create-namespace --wait
 ```
 ```bash
 kubectl get pods -n testing
@@ -354,9 +389,32 @@ kubectl get services -n testing
 kubectl port-forward --namespace=testing svc/hello-world 9090:80
 ```
 
-If you see the usual page, congrats!
+If you see the usual page, congrats! 🎉
 
 Clean up.
 ```bash
 kubectl delete namespace testing
 ```
+
+## Continuous Deployment with ArgoCD
+
+We would like to deploy our application every time a new commit is pushed. We
+will set up ArgoCD to deploy our Helm chart and enable auto-sync so that it
+always refreshes when the digest of the chart image changes.
+
+We need to inform ArgoCD about our Helm chart. We will do that by including a
+step in our template that will create an ArgoCD `Application` object in our
+cluster.
+
+Copy the earlier template.
+```bash
+cp -a templates/01-image-chart templates/02-argo-deploy
+```
+
+Change the `metadata` of `template.yaml`
+```yaml
+metadata:
+  name: hello-world-argocd
+  title: Hello World with ArgoCD
+```
+
