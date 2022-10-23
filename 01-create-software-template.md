@@ -418,3 +418,13 @@ metadata:
   title: Hello World with ArgoCD
 ```
 
+At the time of writing, I couldn't find an action to be used to create
+Kubernetes manifests. The built-in Kubernetes component is used for read-only
+operations. So, we will have to write a [custom action][writing-custom-actions] 
+to create an ArgoCD `Application` in the cluster that points to our Helm chart.
+
+We can 
+
+
+[writing-custom-actions]: https://backstage.io/docs/features/software-templates/writing-custom-actions
+

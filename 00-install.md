@@ -178,6 +178,7 @@ spec:
       labels:
         app: backstage
     spec:
+      serviceAccountName: backstage
       containers:
         - name: backstage
           image: muvaf/backstage-demo:v0.1.0
@@ -185,15 +186,32 @@ spec:
           ports:
             - name: http
               containerPort: 7007
-          envFrom:
-            - secretRef:
-                name: backstage-github-token
+          env:
+            - name: GITHUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: backstage-github-token
+                  key: GITHUB_TOKEN
+                  optional: false
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: backstage
+  namespace: heroku
 ```
 
 Access the service from your local machine to make sure everything is tight!
 ```bash
 kubectl port-forward --namespace=heroku svc/backstage 7007:80
 ```
+
+The `ServiceAccount` will be necessary in the next steps to allow Backstage to
+create objects in our cluster.
 
 ### ArgoCD
 
