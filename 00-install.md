@@ -234,3 +234,63 @@ Access ArgoCD UI with the following command:
 ```bash
 kubectl port-forward svc/argocd-server -n heroku 8080:443
 ```
+
+### Crossplane
+
+We will use Crossplane to meet the infrastructure needs of our applications.
+
+```bash
+helm install crossplane --namespace heroku crossplane-stable/crossplane --wait
+```
+
+We are going to provision cloud infrastructure from Google Cloud. We need to
+install a Crossplane provider to do that.
+
+```bash
+cat <<EOF | kubectl apply -f -
+apiVersion: pkg.crossplane.io/v1
+kind: Provider
+metadata:
+  name: provider-gcp
+spec:
+  package: xpkg.upbound.io/upbound/provider-gcp:v0.16.0
+EOF
+```
+
+Wait till the provider pod comes up.
+```
+kubectl get pods -w
+```
+
+Next, we need to add our cloud credentials for GCP provider to use.
+
+```bash
+cat <<EOF | kubectl apply -f -
+apiVersion: gcp.upbound.io/v1beta1
+kind: ProviderConfig
+metadata:
+  name: default
+spec:
+  projectID: crossplane-playground
+  credentials:
+    source: Secret
+    secretRef:
+      namespace: heroku
+      name: gcp-creds
+      key: creds
+EOF
+```
+
+You need to have your GCP Service Account token JSON to be available in
+`BASE64_ENCODED_SA_JSON` environment variable as base64 encoded.
+```bash
+cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: Secret
+metadata:
+  name: gcp-creds
+  namespace: upbound-system
+stringData:
+  creds: ${BASE64_ENCODED_SA_JSON}
+EOF
+```

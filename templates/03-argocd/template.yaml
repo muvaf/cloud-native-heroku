@@ -1,8 +1,8 @@
 apiVersion: scaffolder.backstage.io/v1beta3
 kind: Template
 metadata:
-  name: hello-world-on-kubernetes
-  title: Hello World on Kubernetes
+  name: hello-world-gitops
+  title: Hello World with GitOps
 spec:
   owner: muvaf/kubecon-na-2022
   type: service

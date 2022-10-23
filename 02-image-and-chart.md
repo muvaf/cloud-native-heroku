@@ -5,7 +5,7 @@ can be deployed to a cluster to deploy our application.
 
 Copy the earlier template to make changes.
 ```bash
-cp -a templates/00-only-github templates/01-image-chart
+cp -a templates/01-hello-world templates/02-image-and-chart
 ```
 
 Change the `metadata` of `template.yaml`
@@ -17,7 +17,7 @@ metadata:
 
 Create a `Dockerfile` for our image.
 ```dockerfile
-# Content of templates/00-only-github/skeleton/Dockerfile
+# Content of templates/01-hello-world/skeleton/Dockerfile
 FROM node:16-alpine
 
 WORKDIR /usr/src/app
@@ -41,17 +41,17 @@ If you see the page at http://127.0.0.1:8080, congrats! 🎉
 
 Let's move on to adding a Helm chart.
 ```bash
-mkdir -p templates/01-image-chart/skeleton/chart
+mkdir -p templates/02-image-and-chart/skeleton/chart
 ```
 It will have chart metadata and basic `Deployment` and `Service` definitions.
 ```bash
-mkdir -p templates/01-image-chart/skeleton/chart/templates
+mkdir -p templates/02-image-and-chart/skeleton/chart/templates
 ```
 
 As you will notice, we need to use `{% raw %}` to open and `{% endraw %}` to
 close what Backstage shouldn't touch so that Helm templates are not considered.
 ```yaml
-# Content of templates/01-image-chart/skeleton/chart/Chart.yaml
+# Content of templates/02-image-and-chart/skeleton/chart/Chart.yaml
 apiVersion: v2
 name: ${{ values.githubRepositoryName }}-chart
 description: A Helm chart for ${{ values.serviceName }} owned by ${{ values.owner }}
@@ -60,13 +60,13 @@ version: 0.1.0
 appVersion: "1.16.0"
 ```
 ```yaml
-# Content of templates/01-image-chart/skeleton/chart/values.yaml
+# Content of templates/02-image-and-chart/skeleton/chart/values.yaml
 image:
   # To be replaced in-place before publishing or installation.
   tag: "%%TAG%%"
 ```
 ```yaml
-# Content of templates/01-image-chart/skeleton/chart/templates/service.yaml
+# Content of templates/02-image-and-chart/skeleton/chart/templates/service.yaml
 apiVersion: v1
 kind: Service
 metadata:
@@ -106,10 +106,10 @@ Container Registry (GHCR).
 
 Create the following file in `.github/workflows/ci.yaml`
 ```bash
-mkdir -p templates/01-image-chart/.github/workflows
+mkdir -p templates/02-image-and-chart/.github/workflows
 ```
 ```yaml
-# Content of templates/01-image-chart/skeleton/.github/workflows/ci.yaml
+# Content of templates/02-image-and-chart/skeleton/.github/workflows/ci.yaml
 {% raw %}
 name: Continuous Integration
 
@@ -185,7 +185,7 @@ Once all done, create a new commit and push it.
 Add our new template to Backstage in http://127.0.0.1:7007/catalog-import
 by providing the path to our new `template.yaml` file in Github.
 ```
-https://github.com/muvaf/cloud-native-heroku/blob/main/templates/01-image-chart/template.yaml
+https://github.com/muvaf/cloud-native-heroku/blob/main/templates/02-image-and-chart/template.yaml
 ```
 
 Go back to creation page and try out our new software template. Once Backstage

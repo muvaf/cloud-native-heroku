@@ -1,0 +1,90 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: hello-world-with-cloud
+  title: Hello World using Cloud
+spec:
+  owner: muvaf/kubecon-na-2022
+  type: service
+
+  parameters:
+    - title: Provide metadata
+      required:
+        - serviceName
+        - owner
+      properties:
+        serviceName:
+          title: Service Name
+          type: string
+          description: Unique name of the component
+          ui:field: EntityNamePicker
+        owner:
+          title: Owner
+          type: string
+          description: Owner of the component
+          ui:field: OwnerPicker
+          ui:options:
+            allowedKinds:
+              - Group
+    - title: Choose a location
+      required:
+        - repoUrl
+      properties:
+        repoUrl:
+          title: Repository Location
+          type: string
+          ui:field: RepoUrlPicker
+          ui:options:
+            allowedHosts:
+              - github.com
+
+  steps:
+
+    - id: fetch-base
+      name: Fetch Base
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          serviceName: ${{ parameters.serviceName }}
+          owner: ${{ parameters.owner }}
+          githubRepositoryOrg: ${{ (parameters.repoUrl | parseRepoUrl).owner }}
+          githubRepositoryName: ${{ (parameters.repoUrl | parseRepoUrl).repo }}
+
+    - id: publish
+      name: Publish
+      action: publish:github
+      input:
+        allowedHosts: ['github.com']
+        description: This is ${{ parameters.serviceName }}
+        repoUrl: ${{ parameters.repoUrl }}
+        repoVisibility: public
+        defaultBranch: main
+        protectDefaultBranch: false
+        requireCodeOwnerReviews: false
+    
+    - id: github-wait
+      name: Wait for Github Actions to complete
+      action: github:wait-last-workflow
+      input:
+        owner: ${{ (parameters.repoUrl | parseRepoUrl).owner }}
+        repo: ${{ (parameters.repoUrl | parseRepoUrl).repo }}
+        branch: main
+
+    - id: argocd-create
+      name: Create ArgoCD Application
+      action: argocd:create-helm-application
+      input:
+        name: ${{ parameters.serviceName }}
+        namespace: ${{ parameters.serviceName }}
+        chart:
+          name: ${{ (parameters.repoUrl | parseRepoUrl).repo }}-chart
+          repo: ghcr.io/${{ (parameters.repoUrl | parseRepoUrl).owner }}
+          version: 0.1.0
+
+    - id: register
+      name: Register
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps.publish.output.repoContentsUrl }}
+        catalogInfoPath: '/catalog-info.yaml'

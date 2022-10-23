@@ -10,14 +10,14 @@ cluster.
 
 Copy the earlier template.
 ```bash
-cp -a templates/01-image-chart templates/02-argo-deploy
+cp -a templates/02-image-and-chart templates/03-argocd
 ```
 
 Change the `metadata` of `template.yaml`
 ```yaml
 metadata:
-  name: hello-world-argocd
-  title: Hello World with ArgoCD
+  name: hello-world-gitops
+  title: Hello World with GitOps
 ```
 
 At the time of writing, I couldn't find an action to be used to create
@@ -141,7 +141,7 @@ The custom actions are there but they're not used by any template. We will edit 
 template to contain a step that calls our custom actions. Add the following right
 before the last step:
 ```yaml
-# Addition to templates/02-argo-deploy/template.yaml
+# Addition to templates/03-argocd/template.yaml
     - id: github-wait
       name: Wait for Github Actions to complete
       action: github:wait-last-workflow

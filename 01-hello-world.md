@@ -14,16 +14,16 @@ build` they would be included. But in order to create and add them step by step,
 we will create a Github repository for Backstage to pull the templates from.
 
 Create a new repository in Github called and have a `templates` folder in it
-with a new folder called `00-only-github`.
+with a new folder called `01-hello-world`.
 ```bash
 # We are in https://github.com/muvaf/cloud-native-heroku
-mkdir -p templates/00-only-github
+mkdir -p templates/01-hello-world
 ```
 
 We'll create the following template object which just creates a repo and
 bootstraps it with the content in `skeleton` folder.
 ```yaml
-# Content of templates/00-only-github/skeleton/template.yaml
+# Content of templates/01-hello-world/skeleton/template.yaml
 apiVersion: scaffolder.backstage.io/v1beta3
 kind: Template
 metadata:
@@ -98,13 +98,13 @@ spec:
 
 In `skeleton` folder, we'll have our very simple hello world application.
 ```bash
-mkdir -p templates/00-only-github/skeleton
+mkdir -p templates/01-hello-world/skeleton
 ```
 
 A `server.js` and `package.json` is all we need for NodeJS to work. A 
 `catalog-info.yaml` for Backstage to identify the application will be there.
 ```yaml
-# Content of templates/00-only-github/skeleton/catalog-info.yaml
+# Content of templates/01-hello-world/skeleton/catalog-info.yaml
 apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
@@ -114,7 +114,7 @@ spec:
   lifecycle: experimental
   owner: ${{values.owner | dump}}
 ```
-Content of `templates/00-only-github/skeleton/package.json`
+Content of `templates/01-hello-world/skeleton/package.json`
 ```json
 {
     "name": "hello-world",
@@ -156,7 +156,7 @@ Now let's create a commit and push it to our Git repo.
 Visit `http://127.0.0.1:7007/catalog-import` and supply the path of
 `template.yaml` in your Git repo. For example:
 ```
-https://github.com/muvaf/cloud-native-heroku/blob/main/templates/00-only-github/template.yaml
+https://github.com/muvaf/cloud-native-heroku/blob/main/templates/01-hello-world/template.yaml
 ```
 
 When you click `Create...` on the side bar now, you'll see that there is a new
