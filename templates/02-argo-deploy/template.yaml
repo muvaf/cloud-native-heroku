@@ -62,6 +62,14 @@ spec:
         defaultBranch: main
         protectDefaultBranch: false
         requireCodeOwnerReviews: false
+    
+    - id: github-wait
+      name: Wait for Github Actions to complete
+      action: github:wait-last-workflow
+      input:
+        owner: ${{ (parameters.repoUrl | parseRepoUrl).owner }}
+        repo: ${{ (parameters.repoUrl | parseRepoUrl).repo }}
+        branch: main
 
     - id: argocd-create
       name: Create ArgoCD Application
