@@ -13,6 +13,13 @@ You can follow the guide in the following order:
    after creation using ArgoCD.
 1. [04-crossplane.md](04-crossplane.md): Add infrastructure provisioning
    capabilities for our service.
+1. [05-next-steps](05-next-steps.md): Next steps after the tutorial!
+
+Feel free to drop a line to me at [Twitter][twitter] or `muvaf` at
+[Crossplane Slack][slack].
 
 
-[talk-link]: https://kccncna2022.sched.com/event/b0d8e5d397fe9a2e61ff0434524d3af2
+[talk-link]:
+    https://kccncna2022.sched.com/event/b0d8e5d397fe9a2e61ff0434524d3af2
+[slack]: https://slack.crossplane.io/
+[twitter]: https://twitter.com/muvaffakonus
