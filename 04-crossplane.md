@@ -400,16 +400,19 @@ spec:
                   key: bucketName
                   optional: false
             - name: GOOGLE_APPLICATION_CREDENTIALS
-              value: "/tmp/creds.json"
+              value: "/creds/creds.json"
           volumeMounts:
           - name: creds
-            mountPath: "/tmp/creds.json"
+            mountPath: "/creds"
             readOnly: true
       volumes:
       - name: creds
         secret:
           secretName: bucket-creds
           optional: false
+          items:
+          - key: googleCredentialsJSON
+            path: creds.json
 ```
 
 Let's import this new template to Backstage and see how it works! Keep in mind
