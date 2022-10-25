@@ -1,7 +1,7 @@
 {
   "name": "bucket-test",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "server.js",
   "license": "MIT",
   "dependencies": {
     "@google-cloud/storage": "^6.5.4"
