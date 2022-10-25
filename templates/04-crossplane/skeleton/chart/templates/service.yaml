@@ -30,3 +30,21 @@ spec:
           ports:
             - name: http
               containerPort: 8080
+          env:
+            - name: BUCKET_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: bucket-creds
+                  key: bucketName
+                  optional: false
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: "/tmp/creds.json"
+          volumeMounts:
+          - name: creds
+            mountPath: "/tmp/creds.json"
+            readOnly: true
+      volumes:
+      - name: creds
+        secret:
+          secretName: bucket-creds
+          optional: false

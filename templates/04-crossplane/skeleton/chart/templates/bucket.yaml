@@ -1,0 +1,10 @@
+apiVersion: kubecon.org/v1alpha1
+kind: Bucket
+metadata:
+  name: kubecon-example
+  annotations:
+    "helm.sh/hook": pre-install
+spec:
+  location: us
+  writeConnectionSecretToRef:
+    name: bucket-creds

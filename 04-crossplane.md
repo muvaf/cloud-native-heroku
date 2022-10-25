@@ -314,3 +314,99 @@ kubectl delete buckets.kubecon.org --all --all-namespaces
 We now have our own API in the cluster, `Bucket` in the `kubecon.org` group that
 will provision several cloud resources and give us an encrypted private `Bucket` that we
 can operate on with the given credentials.
+
+Let's add it to our Helm chart in our Backstage software template.
+```yaml
+# Content of templates/04-crossplane/skeleton/chart/templates/bucket.yaml
+apiVersion: kubecon.org/v1alpha1
+kind: Bucket
+metadata:
+  name: kubecon-example
+spec:
+  location: us
+  writeConnectionSecretToRef:
+    name: bucket-creds
+```
+
+Let's mount the connection secret to our application.
+```yaml
+# Addition to templates/04-crossplane/skeleton/chart/templates/service.yaml
+          env:
+            - name: BUCKET_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: bucket-creds
+                  key: bucketName
+                  optional: false
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: "/tmp/creds.json"
+          volumeMounts:
+          - name: creds
+            mountPath: "/tmp/creds.json"
+            readOnly: true
+      volumes:
+      - name: creds
+        secret:
+          secretName: bucket-creds
+          optional: false
+```
+
+It should look like the following:
+```yaml
+# Content of templates/04-crossplane/skeleton/chart/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello-world
+spec:
+  selector:
+    app: hello-world
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-world
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hello-world
+  template:
+    metadata:
+      labels:
+        app: hello-world
+    spec:
+      containers:
+        - name: hello-world
+          image: ghcr.io/${{ values.githubRepositoryOrg }}/${{ values.githubRepositoryName }}:{% raw %}{{ .Values.image.tag }}{% endraw %}
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: BUCKET_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: bucket-creds
+                  key: bucketName
+                  optional: false
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: "/tmp/creds.json"
+          volumeMounts:
+          - name: creds
+            mountPath: "/tmp/creds.json"
+            readOnly: true
+      volumes:
+      - name: creds
+        secret:
+          secretName: bucket-creds
+          optional: false
+```
+
+Let's import this new template to Backstage and see how it works! Keep in mind
+that `CompositeResourceDefinition` and `Composition` we created need to be in
+the cluster already - they are defined once and used by all instances of our API.
+
