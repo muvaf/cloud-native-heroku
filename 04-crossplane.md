@@ -24,8 +24,8 @@ Change the metadata of our template.
 ```yaml
 # Change in templates/04-crossplane/template.yaml
 metadata:
-  name: hello-world-with-cloud
-  title: Hello World using Cloud
+  name: nodejs-with-bucket
+  title: NodeJS Application with Bucket
 ```
 
 
@@ -44,7 +44,8 @@ spec:
     kind: Bucket
     plural: buckets
   connectionSecretKeys:
-    - s3Url
+    - bucketName
+    - googleCredentialsJSON
   versions:
   - name: v1alpha1
     served: true
@@ -53,10 +54,22 @@ spec:
       openAPIV3Schema:
         type: object
         properties:
+          spec:
+            type: object
+            properties:
+              location:
+                type: string
+                description: |
+                  The location for Bucket and the KMS key to be created in.
+                  See https://cloudgoogle.com/kms/docs/locations for available locations.
+            required:
+            - location
           status:
             type: object
             properties:
-              serviceAccountName:
+              serviceAccountEmail:
+                type: string
+              kmsKeyId:
                 type: string
 ```
 
@@ -73,7 +86,7 @@ spec:
   writeConnectionSecretsToNamespace: heroku
   compositeTypeRef:
     apiVersion: kubecon.org/v1alpha1
-    kind: XBuckets
+    kind: XBucket
   resources:
     - name: bucket
       base:
@@ -81,9 +94,19 @@ spec:
         kind: Bucket
         spec:
           forProvider:
-            location: US
             storageClass: MULTI_REGIONAL
             forceDestroy: true
+      patches:
+        - fromFieldPath: status.kmsKeyId
+          toFieldPath: encryption.defaultKmsKeyName
+          policy:
+            fromFieldPath: Required
+        - fromFieldPath: spec.location
+          toFieldPath: spec.forProvider.location
+      connectionDetails:
+        - type: FromFieldPath
+          name: bucketName
+          fromFieldPath: metadata.annotations[crossplane.io/external-name]
     - name: serviceaccount
       base:
         apiVersion: cloudplatform.gcp.upbound.io/v1beta1
@@ -103,8 +126,8 @@ spec:
             string:
               fmt: "%s/%s"
         - type: ToCompositeFieldPath
-          fromFieldPath: metadata.annotations[crossplane.io/external-name]
-          toFieldPath: status.serviceAccountName
+          fromFieldPath: status.atProvider.email
+          toFieldPath: status.serviceAccountEmail
           policy:
             fromFieldPath: Required
     - name: serviceaccountkey
@@ -116,8 +139,21 @@ spec:
             publicKeyType: TYPE_X509_PEM_FILE
             serviceAccountIdSelector:
               matchControllerRef: true
+          writeConnectionSecretToRef:
+            namespace: heroku
+      patches:
+        - type: CombineFromComposite
+          combine:
+            variables:
+              - fromFieldPath: metadata.uid
+            strategy: string
+            string:
+              fmt: "%s-serviceaccountkey"
+          toFieldPath: spec.writeConnectionSecretToRef.name
+          policy:
+            fromFieldPath: Required
       connectionDetails:
-        - name: creds
+        - name: googleCredentialsJSON
           fromConnectionSecretKey: private_key
     - name: add-sa-to-bucket
       base:
@@ -130,13 +166,151 @@ spec:
             role: roles/storage.objectAdmin
       patches:
         - type: CombineFromComposite
-          toFieldPath: spec.forProvider.member
-          policy:
-            fromFieldPath: Required
           combine:
             variables:
-              - fromFieldPath: status.serviceAccountName
+              - fromFieldPath: status.serviceAccountEmail
             strategy: string
             string:
               fmt: "serviceAccount:%s"
+          toFieldPath: spec.forProvider.member
+          policy:
+            fromFieldPath: Required
+    - name: keyring
+      base:
+        apiVersion: kms.gcp.upbound.io/v1beta1
+        kind: KeyRing
+        spec:
+          forProvider: {}
+      patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.location
+          toFieldPath: spec.forProvider.location
+    - name: cryptokey
+      base:
+        apiVersion: kms.gcp.upbound.io/v1beta1
+        kind: CryptoKey
+        spec:
+          forProvider:
+            destroyScheduledDuration: 86400s
+            keyRingSelector:
+              matchControllerRef: true
+            rotationPeriod: 100000s
+      patches:
+        - type: ToCompositeFieldPath
+          fromFieldPath: status.atProvider.id
+          toFieldPath: status.kmsKeyId
+          policy:
+            fromFieldPath: Required
+    - name: add-sa-to-cryptokey
+      base:
+        apiVersion: kms.gcp.upbound.io/v1beta1
+        kind: CryptoKeyIAMMember
+        spec:
+          forProvider:
+            cryptoKeyIdSelector:
+              matchControllerRef: true
+            role: roles/cloudkms.cryptoKeyEncrypterDecrypter
+      patches:
+        - type: CombineFromComposite
+          combine:
+            variables:
+              - fromFieldPath: status.serviceAccountEmail
+            strategy: string
+            string:
+              fmt: "serviceAccount:%s"
+          toFieldPath: spec.forProvider.member
+          policy:
+            fromFieldPath: Required
 ```
+
+Let's create a claim to give it a try.
+
+```yaml
+apiVersion: kubecon.org/v1alpha1
+kind: Bucket
+metadata:
+  name: kubecon-example
+  namespace: default
+spec:
+  location: us
+  writeConnectionSecretToRef:
+    name: bucket-creds
+```
+
+Once that's ready, we'll extract the bucket path and the credentials to see if
+we are able to access it.
+
+```bash
+kubectl get secret bucket-creds -o jsonpath="{.data.googleCredentialsJSON}" | base64 -d > /tmp/creds.json
+export GOOGLE_APPLICATION_CREDENTIALS=/tmp/creds.json
+```
+
+```bash
+kubectl get secret bucket-creds -o jsonpath="{.data.bucketName}" | base64 -d
+```
+
+A simple Nodejs application that uploads dummy file and prints the list of files
+in the bucket every time it's called.
+```javascript
+const {Storage} = require('@google-cloud/storage');
+var fs = require('fs');
+var os = require('os');
+var uuid = require('uuid');
+
+
+const bucketName = process.env.BUCKET_NAME;
+// Assumes GOOGLE_APPLICATION_CREDENTIALS env var is available.
+const storage = new Storage();
+
+async function run() {
+  // Write to disk.
+  const filePath = `${os.tmpdir()}/${uuid.v4()}`
+  fs.writeFile(filePath, "mydata", function (err) {
+    console.log(`${filePath} is written.`);
+  })
+  // Upload.
+  await storage.bucket(bucketName).upload(filePath);
+  console.log(`${filePath} uploaded to ${bucketName}`);
+  // List.
+  const [files] = await storage.bucket(bucketName).getFiles();
+  console.log('Files:');
+  files.forEach(file => {
+    console.log(file.name);
+  });
+}
+
+run().catch(console.error);
+```
+
+The `package.json` should include `@google-cloud/storage` as
+dependency
+```bash
+yarn init
+```
+```bash
+yarn add @google-cloud/storage
+```
+
+Now run the program!
+```bash
+node index.js
+```
+
+If you see a log like the following, congrats! 🎉
+```
+/var/folders/l1/8wn3dp1s6bv6l1z8c4_xkqfw0000gn/T/dcf065a7-d4c1-494b-b77a-32b10d85f72c is written.
+/var/folders/l1/8wn3dp1s6bv6l1z8c4_xkqfw0000gn/T/dcf065a7-d4c1-494b-b77a-32b10d85f72c uploaded to kubecon-example-5xhpm-kdvmm
+Files:
+dcf065a7-d4c1-494b-b77a-32b10d85f72c
+```
+
+Let's clean up the infra.
+```bash
+kubectl delete buckets.kubecon.org --all --all-namespaces
+```
+
+# Use Infrastructure in Applications
+
+We now have our own API in the cluster, `Bucket` in the `kubecon.org` group that
+will provision several cloud resources and give us an encrypted private `Bucket` that we
+can operate on with the given credentials.

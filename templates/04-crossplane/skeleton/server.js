@@ -1,17 +1,10 @@
-'use strict';
+const http = require('http');
+const port = 8080
 
-const express = require('express');
+const requestListener = function (req, res) {
+  res.writeHead(200);
+  res.end('Hello World! My name is ${{ values.serviceName }} and my owner is ${{ values.owner }}');
+}
 
-// Constants
-const PORT = 8080;
-const HOST = '0.0.0.0';
-
-// App
-const app = express();
-app.get('/', (req, res) => {
-  res.send('Hello World! My name is ${{ values.serviceName }} and my owner is ${{ values.owner }}');
-});
-
-app.listen(PORT, HOST, () => {
-  console.log(`Running on http://${HOST}:${PORT}`);
-});
+const server = http.createServer(requestListener);
+server.listen(port);

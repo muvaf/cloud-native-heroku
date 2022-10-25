@@ -282,7 +282,8 @@ EOF
 ```
 
 You need to have your GCP Service Account token JSON to be available in
-`BASE64_ENCODED_SA_JSON` environment variable as base64 encoded.
+`BASE64_ENCODED_SA_JSON` environment variable as base64 encoded. It should have
+Crypto Key and Bucket permissions at the very least.
 ```bash
 cat <<EOF | kubectl apply -f -
 apiVersion: v1
