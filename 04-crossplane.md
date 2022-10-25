@@ -250,7 +250,7 @@ kubectl get secret bucket-creds -o jsonpath="{.data.bucketName}" | base64 -d
 ```
 
 A simple Nodejs application that uploads dummy file and prints the list of files
-in the bucket every time it's called.
+in the bucket every 30 seconds.
 ```javascript
 const {Storage} = require('@google-cloud/storage');
 var fs = require('fs');
@@ -279,7 +279,13 @@ async function run() {
   });
 }
 
-run().catch(console.error);
+const start = Date.now();
+const timeout = 30 * 60 * 1000; // 30 minutes
+while (start + timeout > Date.now()) {
+  run().catch(console.error);
+  console.log("Waiting for 30 seconds...")
+  await new Promise(resolve => setTimeout(resolve, 30 * 1000));
+}
 ```
 
 The `package.json` should include `@google-cloud/storage` as
@@ -408,5 +414,7 @@ spec:
 
 Let's import this new template to Backstage and see how it works! Keep in mind
 that `CompositeResourceDefinition` and `Composition` we created need to be in
-the cluster already - they are defined once and used by all instances of our API.
+the cluster already - they are defined once and used by all instances of our
+API.
 
+Let's create a new instance and watch it become ready on ArgoCD!

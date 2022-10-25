@@ -25,4 +25,10 @@ async function run() {
   });
 }
 
-run().catch(console.error);
+const start = Date.now();
+const timeout = 30 * 60 * 1000; // 30 minutes
+while (start + timeout > Date.now()) {
+  run().catch(console.error);
+  console.log("Waiting for 30 seconds...")
+  await new Promise(resolve => setTimeout(resolve, 30 * 1000));
+}

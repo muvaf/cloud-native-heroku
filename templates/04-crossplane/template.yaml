@@ -1,8 +1,8 @@
 apiVersion: scaffolder.backstage.io/v1beta3
 kind: Template
 metadata:
-  name: hello-world-with-cloud
-  title: Hello World using Cloud
+  name: nodejs-with-bucket
+  title: NodeJS Application with Bucket
 spec:
   owner: muvaf/kubecon-na-2022
   type: service
