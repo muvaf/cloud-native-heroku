@@ -28,7 +28,7 @@ In addition, we need to have an action to wait for images to be published before
 creating the Helm chart.
 
 Since it may take too long, I wrote that custom action before the tutorial as an
-NPM package that we can add to our backend package of Backstage app.
+NPM package called [`@muvaf/create-argocd-application`][npm-pkg] that we can add to our backend package of Backstage app.
 
 ```
 # From your Backstage root directory
@@ -176,4 +176,4 @@ If all things above happened, congratulate yourself! 🎉
 
 
 [writing-custom-actions]: https://backstage.io/docs/features/software-templates/writing-custom-actions
-
+[npm-pkg]: https://www.npmjs.com/package/@muvaf/create-argocd-application

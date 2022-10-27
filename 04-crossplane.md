@@ -263,29 +263,29 @@ const bucketName = process.env.BUCKET_NAME;
 const storage = new Storage();
 
 async function run() {
-  // Write to disk.
-  const filePath = `${os.tmpdir()}/${uuid.v4()}`
-  fs.writeFile(filePath, "mydata", function (err) {
-    console.log(`${filePath} is written.`);
-  })
-  // Upload.
-  await storage.bucket(bucketName).upload(filePath);
-  console.log(`${filePath} uploaded to ${bucketName}`);
-  // List.
-  const [files] = await storage.bucket(bucketName).getFiles();
-  console.log('Files:');
-  files.forEach(file => {
-    console.log(file.name);
-  });
+  const start = Date.now();
+  const timeout = 30 * 60 * 1000; // 30 minutes
+  while (start + timeout > Date.now()) {
+    // Write to disk.
+    const filePath = `${os.tmpdir()}/${uuid.v4()}`
+    fs.writeFile(filePath, "mydata", function (err) {
+      console.log(`${filePath} is written.`);
+    })
+    // Upload.
+    await storage.bucket(bucketName).upload(filePath);
+    console.log(`${filePath} uploaded to ${bucketName}`);
+    // List.
+    const [files] = await storage.bucket(bucketName).getFiles();
+    console.log('Files:');
+    files.forEach(file => {
+      console.log(file.name);
+    });
+    console.log("Waiting for 30 seconds...")
+    await new Promise(resolve => setTimeout(resolve, 30 * 1000));
+  }
 }
-
-const start = Date.now();
-const timeout = 30 * 60 * 1000; // 30 minutes
-while (start + timeout > Date.now()) {
-  run().catch(console.error);
-  console.log("Waiting for 30 seconds...")
-  await new Promise(resolve => setTimeout(resolve, 30 * 1000));
-}
+run().catch(console.error);
+console.log("Done.")
 ```
 
 The `package.json` should include `@google-cloud/storage` as
@@ -345,16 +345,19 @@ Let's mount the connection secret to our application.
                   key: bucketName
                   optional: false
             - name: GOOGLE_APPLICATION_CREDENTIALS
-              value: "/tmp/creds.json"
+              value: "/creds/creds.json"
           volumeMounts:
           - name: creds
-            mountPath: "/tmp/creds.json"
+            mountPath: "/creds"
             readOnly: true
       volumes:
       - name: creds
         secret:
           secretName: bucket-creds
           optional: false
+          items:
+          - key: googleCredentialsJSON
+            path: creds.json
 ```
 
 It should look like the following:
