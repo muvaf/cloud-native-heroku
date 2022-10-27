@@ -1,3 +1,2 @@
-# To be replaced in-place before publishing or installation.
 image:
-  tag: "%%TAG%%"
+  tag: main

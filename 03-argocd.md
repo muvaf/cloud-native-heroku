@@ -174,6 +174,33 @@ you'll see the following happening:
 
 If all things above happened, congratulate yourself! 🎉
 
+# Updating the Version
+
+Even though we push to the same image tag, neither Kubernetes will check the
+digest of app image nor the ArgoCD will check the digest of the Helm chart
+image. So, we'll use a tool called [ArgoCD Image Updater][argocd-image-updater]
+to check for a new digest on the tag and update our `Application` resource.
+
+> We can possibly make this part of the ArgoCD action but it's going towards
+> asking for everything so I will update the action to accept a YAML so that
+> everything can be configured.
+
+We need to annotate the `Application` resource with an update strategy.
+```bash
+kubectl -n heroku get applications.argoproj.io
+# kubecon-example
+```
+```bash
+kubectl -n heroku annotate applications.argoproj.io kubecon-example argocd-image-updater.argoproj.io/image-list='main=ghcr.io/muvaf/kubecon-example:main'
+```
+```bash
+kubectl -n heroku annotate applications.argoproj.io kubecon-example argocd-image-updater.argoproj.io/main.update-strategy='digest'
+```
+
+Let's make a small change in our hello world code and see if it makes it to our
+cluster via ArgoCD!
+
 
 [writing-custom-actions]: https://backstage.io/docs/features/software-templates/writing-custom-actions
 [npm-pkg]: https://www.npmjs.com/package/@muvaf/create-argocd-application
+[argocd-image-updater]: https://argocd-image-updater.readthedocs.io/

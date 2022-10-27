@@ -14,6 +14,7 @@ Others:
 * `kind` to create a local cluster.
 * `kubectl`
 * `helm`
+* `argocd`, the CLI.
 
 ## Installation
 
@@ -239,6 +240,51 @@ kubectl -n heroku get secret argocd-initial-admin-secret -o jsonpath='{.data.pas
 Access ArgoCD UI with the following command:
 ```bash
 kubectl port-forward svc/argocd-server -n heroku 8080:443
+```
+
+#### ArgoCD Image Updater
+
+We'll use this tool to update our ArgoCD `Application` to the most recently
+pushed image.
+
+We need to create an ArgoCD user first. Edit `argocd-cm` `ConfigMap` in `heroku`
+namespace to add a new user.
+```bash
+kubectl -n heroku edit configmap argocd-cm
+```
+```yaml
+data:
+  # ...
+  accounts.image-updater: apiKey
+```
+
+Go to https://127.0.0.1:8080/settings/accounts/image-updater and generate a new
+token for our new user.
+
+Add it to an environment variable:
+```bash
+ARGOCD_TOKEN='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJhcmdvY2QiLCJzdWIiOiJpbWFnZS11cGRhdGVyOmFwaUtleSIsIm5iZiI6MTY2Njg3ODg0NywiaWF0IjoxNjY2ODc4ODQ3LCJqdGkiOiI4ZmYzZjI4MS1lN2I4LTRmOWYtYTA3ZS1lMGRkMmQ3ZjBkYjYifQ.FOgC7scXU0AWjc3bzEi-7kFTHA4ibGK4J7kVD6UM7Oc'
+```
+
+Create the `Secret` it uses to authenticate to ArgoCD:
+```bash
+kubectl -n heroku create secret generic argocd-image-updater-secret \
+  --from-literal argocd.token=$ARGOCD_TOKEN --dry-run=client -o yaml |
+  kubectl -n heroku apply -f -
+```
+
+Edit the ArgoCD RBAC `ConfigMap` named `argocd-rbac-cm` to give permissions to this user:
+```yaml
+data:
+  policy.image-updater: |
+    p, role:image-updater, applications, get, */*, allow
+    p, role:image-updater, applications, update, */*, allow
+    g, image-updater, role:image-updater
+```
+
+Install with the following command:
+```bash
+kubectl apply -n heroku -f https://raw.githubusercontent.com/argoproj-labs/argocd-image-updater/v0.12.0/manifests/install.yaml
 ```
 
 ### Crossplane
