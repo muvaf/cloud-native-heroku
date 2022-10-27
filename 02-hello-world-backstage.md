@@ -13,8 +13,11 @@ We can have the templates as part of the Backstage app and when we run `yarn
 build` they would be included. But in order to create and add them step by step,
 we will create a Github repository for Backstage to pull the templates from.
 
-Create a new repository in Github called and have a `templates` folder in it
-with a new folder called `02-hello-world`.
+Create a new repository in Github called `kubecon-templates`. Clone and
+initialize the repo with the given commands in the Github UI.
+
+
+Create a new folder called `templates/02-hello-world`.
 ```bash
 # We are in https://github.com/muvaf/cloud-native-heroku
 mkdir -p templates/02-hello-world
@@ -23,7 +26,7 @@ mkdir -p templates/02-hello-world
 We'll create the following template object which just creates a repo and
 bootstraps it with the content in `skeleton` folder.
 ```yaml
-# Content of templates/02-hello-world/skeleton/template.yaml
+# Content of templates/02-hello-world/template.yaml
 apiVersion: scaffolder.backstage.io/v1beta3
 kind: Template
 metadata:
@@ -117,17 +120,17 @@ spec:
 Content of `templates/02-hello-world/skeleton/package.json`
 ```json
 {
-    "name": "hello-world",
-    "version": "1.0.0",
-    "description": "Kubecon NA demo",
-    "author": "First Last <first.last@example.com>",
-    "main": "server.js",
-    "scripts": {
-      "start": "node server.js"
-    }
+  "name": "hello-world",
+  "version": "1.0.0",
+  "description": "Kubecon NA demo",
+  "author": "First Last <first.last@example.com>",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
   }
+}
 ```
-Content of `server.js`
+Content of `templates/02-hello-world/skeleton/server.js`
 ```javascript
 const http = require('http');
 const port = process.env.PORT || 8080
@@ -142,6 +145,15 @@ server.listen(port);
 ```
 
 Now let's create a commit and push it to our Git repo.
+
+```bash
+git init
+git add .
+git commit "initial-template"
+git remote add origin git@github.com:muvaf/kubecon-templates.git
+git branch -M main
+git push -u origin main
+```
 
 Visit `http://127.0.0.1:7007/catalog-import` and supply the path of
 `template.yaml` in your Git repo. For example:
