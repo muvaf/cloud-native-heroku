@@ -241,7 +241,7 @@ kubectl -n heroku get secret argocd-initial-admin-secret -o jsonpath='{.data.pas
 
 Access ArgoCD UI with the following command:
 ```bash
-kubectl port-forward svc/argocd-server -n heroku 8080:443
+kubectl port-forward svc/argocd-server -n heroku 9090:443
 ```
 
 ### Crossplane

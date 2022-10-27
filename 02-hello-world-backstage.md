@@ -147,11 +147,8 @@ server.listen(port);
 Now let's create a commit and push it to our Git repo.
 
 ```bash
-git init
 git add .
-git commit "initial-template"
-git remote add origin git@github.com:muvaf/kubecon-templates.git
-git branch -M main
+git commit -m "initial-template"
 git push -u origin main
 ```
 
