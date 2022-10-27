@@ -68,7 +68,7 @@ operations.
     integrations:
       github:
         - host: github.com
-          token: ${GITHUB_TOKEN} # this should be the token from GitHub
+          token: ${GITHUB_TOKEN} # This env var should be available.
     ```
 3. Start the Backstage app again.
     ```bash
@@ -222,7 +222,10 @@ continuously sync those manifests to the application cluster.
 Install ArgoCD to our cluster:
 ```bash
 # kubectl is not able to change SA namespace given in ClusterRoleBinding.
-kubectl create -n heroku -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml --dry-run -o yaml | sed 's/namespace: argocd/namespace: heroku/g' | kubectl apply -f -
+kubectl create -n heroku -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml --dry-run -o yaml | \
+sed 's/namespace: argocd/namespace: heroku/g' | \
+sed 's/imagePullPolicy: Always/imagePullPolicy: IfNotPresent/g' | \
+kubectl apply -f -
 ```
 
 Wait for pods to become ready for admin password to be generated:
@@ -296,7 +299,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: gcp-creds
-  namespace: upbound-system
+  namespace: heroku
 stringData:
   creds: ${BASE64_ENCODED_SA_JSON}
 EOF

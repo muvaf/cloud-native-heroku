@@ -1,5 +1,5 @@
 const http = require('http');
-const port = 8080
+const port = process.env.PORT || 8080
 
 const requestListener = function (req, res) {
   res.writeHead(200);
