@@ -98,6 +98,7 @@ spec:
           image: ghcr.io/${{ values.githubRepositoryOrg }}/${{ values.githubRepositoryName }}:{% raw %}{{ .Values.image.tag }}{% endraw %}
           ports:
             - name: http
+              containerPort: 8080
 ```
 
 Now we will add a `.github` folder that will contain Github Actions workflow
