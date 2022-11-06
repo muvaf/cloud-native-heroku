@@ -4,6 +4,14 @@ Many applications require infrastructure such as databases, buckets, caches, you
 name it. We will use Crossplane claims in our Helm chart to request these
 resources.
 
+In this tutorial, we will:
+* Create a new API in our cluster for applications to request infratructure
+  from.
+* Create a new `Composition` that will provision a `Bucket` in Google Cloud
+  Platform to back that API.
+* Add our new API to our Backstage software template and used it to create
+  a new service.
+
 We will create our own Kubernetes API for a GCP `Bucket` that is encrypted so
 that everyone using our software templates can use only the golden path defined
 by the platform team to get their infrastructure. Everyone will use encrypted
@@ -467,15 +475,5 @@ If all things above happened, congratulate yourself! 🎉
 
 ![ArgoCD provisioned Crossplane resources](assets/argocd-provisioned-bucket.png)
 ![Logs of applications operating on bucket provisioned by Crossplane](assets/bucket-helloworld-logs.png)
-
-# Recap
-
-In this tutorial:
-* We created a new API in our cluster for applications to request infratructure
-  from.
-* We created a new `Composition` that will provision a `Bucket` in Google Cloud
-  Platform to back that API.
-* We added our new API to our Backstage software template and used it to create
-  a new service.
 
 Jump to the [next steps](06-next-steps.md) page to see what you can do next!

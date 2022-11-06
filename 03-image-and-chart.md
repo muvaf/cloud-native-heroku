@@ -3,6 +3,12 @@
 In this template we will add image building capabilities and a Helm chart that
 can be deployed to a cluster to deploy our application.
 
+In this tutorial, we will:
+* Create a new software template with a Docker image and Helm chart,
+* Create a continuous integration pipeline to build and publish the image and
+  chart to Github Container Registry,
+* Install the software instance we created using the new template.
+
 > You can find the final template for this tutorial in the
 > [templates/02-image-and-chart](templates/02-image-and-chart) folder.
 
@@ -43,7 +49,7 @@ docker build --tag hello:v0.1.0 templates/02-image-and-chart/skeleton
 docker run -p 8080:8080 hello:v0.1.0
 ```
 
-Visitt http://127.0.0.1:8080, and you should see a page with the following
+Visit http://127.0.0.1:8080, and you should see a page with the following
 because we deployed the template itself:
 ```
 Hello World! My name is ${{ values.serviceName }} and my owner is ${{ values.owner }}
@@ -63,7 +69,7 @@ mkdir -p templates/02-image-and-chart/skeleton/chart/templates
 As you will notice, we need to use `{% raw %}` to open and `{% endraw %}` to
 close what Backstage shouldn't touch so that Helm templates are not considered.
 ```yaml
-# Content of templates/03-image-and-chart/skeleton/chart/Chart.yaml
+# Content of templates/02-image-and-chart/skeleton/chart/Chart.yaml
 apiVersion: v2
 name: ${{ values.githubRepositoryName }}-chart
 description: A Helm chart for ${{ values.serviceName }} owned by ${{ values.owner }}
@@ -72,13 +78,13 @@ version: 0.1.0
 appVersion: "1.16.0"
 ```
 ```yaml
-# Content of templates/03-image-and-chart/skeleton/chart/values.yaml
+# Content of templates/02-image-and-chart/skeleton/chart/values.yaml
 image:
   # To be replaced in-place before publishing or installation.
   tag: "%%TAG%%"
 ```
 ```yaml
-# Content of templates/03-image-and-chart/skeleton/chart/templates/service.yaml
+# Content of templates/02-image-and-chart/skeleton/chart/templates/service.yaml
 apiVersion: v1
 kind: Service
 metadata:
@@ -123,7 +129,7 @@ Create the following file in `.github/workflows/ci.yaml`
 mkdir -p templates/02-image-and-chart/skeleton/.github/workflows
 ```
 ```yaml
-# Content of templates/03-image-and-chart/skeleton/.github/workflows/ci.yaml
+# Content of templates/02-image-and-chart/skeleton/.github/workflows/ci.yaml
 {% raw %}
 name: Continuous Integration
 
@@ -205,7 +211,7 @@ git push
 Add our new template to Backstage in `http://127.0.0.1:7007/catalog-import`
 by providing the path to our new `template.yaml` file in Github.
 ```
-https://github.com/muvaf/cloud-native-heroku/blob/main/templates/03-image-and-chart/template.yaml
+https://github.com/muvaf/cloud-native-heroku/blob/main/templates/02-image-and-chart/template.yaml
 ```
 
 Go back to creation page and try out our new software template by **creating a
@@ -237,14 +243,6 @@ Clean up.
 ```bash
 kubectl delete namespace testing
 ```
-
-# Recap
-
-In this tutorial:
-* Created a new software template with a Docker image and Helm chart,
-* Created a continuous integration pipeline to build and publish the image and
-  chart to Github Container Registry,
-* Installed the software instance we created using the new template.
 
 Jump to the [next tutorial](04-argocd.md) that will add a continuous delivery
 pipeline to our software instance using ArgoCD.

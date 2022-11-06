@@ -6,12 +6,18 @@ We will set up ArgoCD to deploy our Helm chart.
 > Refresh of the application at every commit is WIP since it is not much inline
 > with Kubernetes conventions.
 
-We need to inform ArgoCD about our Helm chart. We will do that by including a
-step in our template that will create an ArgoCD `Application` object in our
-cluster.
+In this tutorial, we will:
+* Created a custom action that creates an ArgoCD Application and blocks Backstage
+  until the application and chart images are pushed to the registry.
+* Used the custom action in a template to create a new service that is deployed
+  to the cluster.
 
 > You can find the final template for this tutorial in the
 > [templates/03-argocd](templates/03-argocd) folder.
+
+We need to inform ArgoCD about our Helm chart. We will do that by including a
+step in our template that will create an ArgoCD `Application` object in our
+cluster.
 
 Copy the earlier template.
 ```bash
@@ -201,14 +207,6 @@ you'll see the following happening:
 If all things above happened, congratulate yourself! 🎉
 
 ![ArgoCD example screen](assets/argocd-deployed.png)
-
-# Recap
-
-In this tutorial:
-* Created a custom action that creates an ArgoCD Application and blocks Backstage
-  until the application and chart images are pushed to the registry.
-* Used the custom action in a template to create a new service that is deployed
-  to the cluster.
 
 Jump to the [next tutorial](05-crossplane.md) that will show you how to create
 your own infrastructure API and use it in your templates so that software instances

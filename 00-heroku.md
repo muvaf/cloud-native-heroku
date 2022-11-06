@@ -59,8 +59,9 @@ https://kubecon-na-2022.herokuapp.com/
 ```
 
 If you want to add cloud infrastructure like a bucket, you need to add an addon
-and use the given environment variable in your application. However, you don't
-get to have it in your cloud account so how you can configure it is quite limited.
+and use the **given environment variable** in your application. However, you
+don't get to have it in your cloud account so how you can configure it is limited
+depending on which plugin you choose to use.
 
 ![Heroku addons](assets/heroku-addons.png)
 

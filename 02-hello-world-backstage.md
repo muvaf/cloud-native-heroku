@@ -4,6 +4,12 @@ Backstage allows you to define software templates together with the code
 scaffolding that will be used in the initial commit of the Git repo it creates.
 We'll create a hello world template to get a taste of what it does and how.
 
+In this tutorial, we will:
+* Create a new Backstage Template.
+* Create a new Github repository for Backstage to pull the templates from.
+* Use Backstage to bootstrap a new service with its own repository.
+* Run the service locally.
+
 > You can find the final template for this tutorial in the
 > [templates/01-hello-world](templates/01-hello-world) folder.
 
@@ -174,15 +180,5 @@ npm start
 
 If you see a page in http://127.0.0.1:8080 , congrats! 🎉
 
-# Recap
-
-In this tutorial:
-* Created a new Backstage Template.
-* Created a new Github repository for Backstage to pull the templates from.
-* Used Backstage to bootstrap a new service with its own repository.
-* Run the service locally.
-
-In the next steps, we will work build on top of this template and add more
-capabilities!
-
-Jump
+Jump to the [next tutorial](03-image-and-chart.md) to learn how to add a pipeline
+to build images for our application and Helm chart using GitHub Actions.
