@@ -63,6 +63,6 @@ jobs:
         env:
           IMAGE_BASE_URL: ghcr.io/${{ github.repository_owner }}
         run: |
-          helm package chart --version 0.1.0
-          helm push $(find . -iname '*-chart-0.1.0.tgz') oci://${IMAGE_BASE_URL}
+          helm package chart --version 9.9.9
+          helm push $(find . -iname '*-chart-9.9.9.tgz') oci://${IMAGE_BASE_URL}
 {% endraw %}

@@ -19,6 +19,23 @@ Content of `package.json`
 }
 ```
 
+You can use the following pattern in your terminal to write to a file with one
+command. `Shift+Enter` should help you with new lines.
+```bash
+cat <<EOF > package.json
+{
+    "name": "hello-world",
+    "version": "1.0.0",
+    "description": "Kubecon NA 2022",
+    "author": "First Last <first.last@example.com>",
+    "main": "server.js",
+    "scripts": {
+      "start": "node server.js"
+    }
+}
+EOF
+```
+
 Content of `server.js`
 ```javascript
 const http = require('http');

@@ -1,9 +1,7 @@
 apiVersion: kubecon.org/v1alpha1
 kind: Bucket
 metadata:
-  name: kubecon-example
-  annotations:
-    "helm.sh/hook": pre-install
+  name: photos
 spec:
   location: us
   writeConnectionSecretToRef:

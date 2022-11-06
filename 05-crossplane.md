@@ -1,10 +1,5 @@
 # Add Infrastructure
 
-In the earlier steps, we set up a template with the basic Heroku experience;
-* Create repo to deploy immediately,
-* Push commit to deploy directly,
-* (extra) Run in our own cluster.
-
 Many applications require infrastructure such as databases, buckets, caches, you
 name it. We will use Crossplane claims in our Helm chart to request these
 resources.
@@ -14,9 +9,12 @@ that everyone using our software templates can use only the golden path defined
 by the platform team to get their infrastructure. Everyone will use encrypted
 bucket and they won't need to have cloud credentials to provision one.
 
+> You can find the final template for this tutorial in the
+> [templates/04-crossplane](templates/04-crossplane) folder.
 
 Before doing all that, let's copy our software template from the earlier step.
 ```bash
+# We are in the template repo, i.e. {your username}/cloud-native-heroku on Github.
 cp -a templates/03-argocd templates/04-crossplane
 ```
 
@@ -28,9 +26,9 @@ metadata:
   title: NodeJS Application with Bucket
 ```
 
-
 First, define our new API.
 ```yaml
+# cat <<EOF | kubectl apply -f - (then Shift+Enter, paste the content, Shift+Enter, EOF, Enter)
 apiVersion: apiextensions.crossplane.io/v1
 kind: CompositeResourceDefinition
 metadata:
@@ -76,6 +74,7 @@ spec:
 Let's create a `Composition` to back that API.
 
 ```yaml
+# cat <<EOF | kubectl apply -f - (then Shift+Enter, paste the content, Shift+Enter, EOF, Enter)
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
@@ -226,10 +225,11 @@ spec:
 Let's create a claim to give it a try.
 
 ```yaml
+# cat <<EOF | kubectl apply -f - (then Shift+Enter, paste the content, Shift+Enter, EOF, Enter)
 apiVersion: kubecon.org/v1alpha1
 kind: Bucket
 metadata:
-  name: kubecon-example
+  name: hello-bucket
   namespace: default
 spec:
   location: us
@@ -240,18 +240,34 @@ spec:
 Once that's ready, we'll extract the bucket path and the credentials to see if
 we are able to access it.
 
+You can see individual cloud resources being created by running the following
+command:
 ```bash
-kubectl get secret bucket-creds -o jsonpath="{.data.googleCredentialsJSON}" | base64 -d > /tmp/creds.json
-export GOOGLE_APPLICATION_CREDENTIALS=/tmp/creds.json
+kubectl get managed
+```
+
+Let's wait till all resources are created and the claim is in `Ready` state.
+```bash
+kubectl -n default get buckets --watch
+```
+
+Once it is ready, we will extract the credentials of the `ServiceAccount` that
+is created as part of the `Composition` and use it in our sample application.
+
+```bash
+kubectl -n default get secret bucket-creds -o jsonpath="{.data.googleCredentialsJSON}" | base64 -d > /tmp/bucket-creds.json
+export GOOGLE_APPLICATION_CREDENTIALS=/tmp/bucket-creds.json
 ```
 
 ```bash
-kubectl get secret bucket-creds -o jsonpath="{.data.bucketName}" | base64 -d
+export BUCKET_NAME=$(kubectl -n default get secret bucket-creds -o jsonpath="{.data.bucketName}" | base64 -d)
 ```
 
 A simple Nodejs application that uploads dummy file and prints the list of files
-in the bucket every 30 seconds.
+in the bucket every 30 seconds. Let's edit our `server.js` file to have the
+following content.
 ```javascript
+// Content of templates/04-crossplane/skeleton/server.js
 const {Storage} = require('@google-cloud/storage');
 var fs = require('fs');
 var os = require('os');
@@ -285,41 +301,37 @@ async function run() {
   }
 }
 run().catch(console.error);
-console.log("Done.")
 ```
 
 The `package.json` should include `@google-cloud/storage` as
-dependency
+dependency.
 ```bash
-yarn init
-```
-```bash
-yarn add @google-cloud/storage
+yarn add --cwd templates/04-crossplane/skeleton @google-cloud/storage
 ```
 
 Now run the program!
 ```bash
-node index.js
+node templates/04-crossplane/skeleton/server.js
 ```
 
 If you see a log like the following, congrats! 🎉
 ```
 /var/folders/l1/8wn3dp1s6bv6l1z8c4_xkqfw0000gn/T/dcf065a7-d4c1-494b-b77a-32b10d85f72c is written.
-/var/folders/l1/8wn3dp1s6bv6l1z8c4_xkqfw0000gn/T/dcf065a7-d4c1-494b-b77a-32b10d85f72c uploaded to kubecon-example-5xhpm-kdvmm
+/var/folders/l1/8wn3dp1s6bv6l1z8c4_xkqfw0000gn/T/dcf065a7-d4c1-494b-b77a-32b10d85f72c uploaded to hello-bucket-5xhpm-kdvmm
 Files:
 dcf065a7-d4c1-494b-b77a-32b10d85f72c
 ```
 
 Let's clean up the infra.
 ```bash
-kubectl delete buckets.kubecon.org --all --all-namespaces
+kubectl -n default delete buckets hello-bucket
 ```
 
 # Use Infrastructure in Applications
 
 We now have our own API in the cluster, `Bucket` in the `kubecon.org` group that
-will provision several cloud resources and give us an encrypted private `Bucket` that we
-can operate on with the given credentials.
+will provision several cloud resources and give us an encrypted private `Bucket`
+that we can operate on with the given credentials.
 
 Let's add it to our Helm chart in our Backstage software template.
 ```yaml
@@ -327,7 +339,7 @@ Let's add it to our Helm chart in our Backstage software template.
 apiVersion: kubecon.org/v1alpha1
 kind: Bucket
 metadata:
-  name: kubecon-example
+  name: photos
 spec:
   location: us
   writeConnectionSecretToRef:
@@ -362,7 +374,7 @@ Let's mount the connection secret to our application.
 
 It should look like the following:
 ```yaml
-# Content of templates/04-crossplane/skeleton/chart/templates/service.yaml
+# The full content of templates/04-crossplane/skeleton/chart/templates/service.yaml
 apiVersion: v1
 kind: Service
 metadata:
@@ -418,9 +430,50 @@ spec:
             path: creds.json
 ```
 
-Let's import this new template to Backstage and see how it works! Keep in mind
-that `CompositeResourceDefinition` and `Composition` we created need to be in
-the cluster already - they are defined once and used by all instances of our
-API.
+Keep in mind that `CompositeResourceDefinition` and `Composition` we created
+need to be in the cluster already - they are defined once and used by all
+instances of our API. We can have different `Composition`s in different clusters
+backing the same API with different tiers of infrastructure!
 
-Let's create a new instance and watch it become ready on ArgoCD!
+Before committing our changes, let's add a `.gitignore` so that `node_modules` is
+not included in our repo.
+```bash
+echo "node_modules" >> templates/04-crossplane/skeleton/.gitignore
+```
+
+Now commit and push our new template!
+
+```bash
+git add .
+git commit -s -m "templates: add 04-crossplane"
+git push
+```
+
+Add our new template to Backstage in `http://127.0.0.1:7007/catalog-import`
+by providing the path to our new `template.yaml` file in Github.
+```
+https://github.com/muvaf/cloud-native-heroku/blob/main/templates/04-crossplane/template.yaml
+```
+
+Create a new service using our shiny new `NodeJS Application with Bucket` template
+and you'll see the following happening:
+* Git repo created.
+* Image and chart are pushed to GHCR.
+* ArgoCD fetches the chart and deploys it to your cluster.
+* Bucket is created and the credentials are mounted to the application.
+* Your application is up and operating on the bucket.
+
+If all things above happened, congratulate yourself! 🎉
+
+![ArgoCD provisioned Crossplane resources](assets/argocd-provisioned-bucket.png)
+![Logs of applications operating on bucket provisioned by Crossplane](assets/bucket-helloworld-logs.png)
+
+# Recap
+
+In this tutorial:
+* We created a new API in our cluster for applications to request infratructure
+  from.
+* We created a new `Composition` that will provision a `Bucket` in Google Cloud
+  Platform to back that API.
+* We added our new API to our Backstage software template and used it to create
+  a new service.

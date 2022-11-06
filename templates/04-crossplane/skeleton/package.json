@@ -1,10 +1,14 @@
 {
-  "name": "bucket-test",
+  "name": "hello-world",
   "version": "1.0.0",
+  "description": "Kubecon NA 2022 - Cloud Native Heroku",
+  "author": "First Last <first.last@example.com>",
   "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
   "license": "MIT",
   "dependencies": {
-    "@google-cloud/storage": "^6.5.4",
-    "uuid": "^9.0.0"
+    "@google-cloud/storage": "^6.7.0"
   }
 }
