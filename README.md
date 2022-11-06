@@ -5,16 +5,16 @@ Stack"][talk-link] by Muvaffak Onus, Upbound & Sidarta Aguiar de Oliveira, Grupo
 
 You can follow the guide in the following order:
 1. [00-heroku.md](00-heroku.md): Hello world with Heroku.
-1. [01-install.md](01-install.md): Install Backstage, ArgoCD and Crossplane.
-1. [02-hello-world-backstage.md](02-hello-world-backstage.md): A hello world
+1. [00-install.md](00-install.md): Install Backstage, ArgoCD and Crossplane.
+1. [01-hello-world-backstage.md](01-hello-world-backstage.md): A hello world
    software template for Backstage.
-1. [03-image-and-chart.md](03-image-and-chart.md): Add image publishing and a
+1. [02-image-and-chart.md](02-image-and-chart.md): Add image publishing and a
    Helm chart to our software template.
-1. [04-argocd.md](04-argocd.md): Continuously deploy our service instance right
+1. [03-argocd.md](03-argocd.md): Continuously deploy our service instance right
    after creation using ArgoCD.
-1. [05-crossplane.md](05-crossplane.md): Add infrastructure provisioning
+1. [04-crossplane.md](04-crossplane.md): Add infrastructure provisioning
    capabilities for our service.
-1. [06-next-steps](06-next-steps.md): Next steps after the tutorial!
+1. [05-next-steps](05-next-steps.md): Next steps after the tutorial!
 
 Feel free to drop a line to me at [Twitter][twitter] or `muvaf` at
 [Crossplane Slack][slack].

@@ -31,4 +31,3 @@ async function run() {
   }
 }
 run().catch(console.error);
-console.log("Done.")

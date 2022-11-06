@@ -1,0 +1,41 @@
+# This needs to be ready in the cluster.
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: xbuckets.kubecon.org
+spec:
+  group: kubecon.org
+  names:
+    kind: XBucket
+    plural: xbuckets
+  claimNames:
+    kind: Bucket
+    plural: buckets
+  connectionSecretKeys:
+    - bucketName
+    - googleCredentialsJSON
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                location:
+                  type: string
+                  description: |
+                    The location for Bucket and the KMS key to be created in.
+                    See https://cloudgoogle.com/kms/docs/locations for available locations.
+              required:
+                - location
+            status:
+              type: object
+              properties:
+                serviceAccountEmail:
+                  type: string
+                kmsKeyId:
+                  type: string

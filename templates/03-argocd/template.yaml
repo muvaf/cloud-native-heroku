@@ -4,7 +4,7 @@ metadata:
   name: hello-world-gitops
   title: Hello World with GitOps
 spec:
-  owner: muvaf/kubecon-na-2022
+  owner: muvaf/cloud-native-heroku
   type: service
 
   parameters:
@@ -39,7 +39,6 @@ spec:
               - github.com
 
   steps:
-
     - id: fetch-base
       name: Fetch Base
       action: fetch:template
@@ -62,7 +61,7 @@ spec:
         defaultBranch: main
         protectDefaultBranch: false
         requireCodeOwnerReviews: false
-    
+        
     - id: github-wait
       name: Wait for Github Actions to complete
       action: github:wait-last-workflow
@@ -78,9 +77,9 @@ spec:
         name: ${{ parameters.serviceName }}
         namespace: ${{ parameters.serviceName }}
         chart:
-          name: ${{ (parameters.repoUrl | parseRepoUrl).repo }}-chart
           repo: ghcr.io/${{ (parameters.repoUrl | parseRepoUrl).owner }}
-          version: 0.1.0
+          name: ${{ (parameters.repoUrl | parseRepoUrl).repo }}-chart
+          version: 9.9.9
 
     - id: register
       name: Register

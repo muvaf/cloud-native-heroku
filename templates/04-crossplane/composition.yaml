@@ -1,0 +1,146 @@
+# This needs to be ready in the cluster.
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: encrypted.xbuckets.kubecon.org
+  labels:
+    provider: gcp
+spec:
+  writeConnectionSecretsToNamespace: heroku
+  compositeTypeRef:
+    apiVersion: kubecon.org/v1alpha1
+    kind: XBucket
+  resources:
+    - name: bucket
+      base:
+        apiVersion: storage.gcp.upbound.io/v1beta1
+        kind: Bucket
+        spec:
+          forProvider:
+            storageClass: MULTI_REGIONAL
+            forceDestroy: true
+      patches:
+        - fromFieldPath: status.kmsKeyId
+          toFieldPath: encryption.defaultKmsKeyName
+          policy:
+            fromFieldPath: Required
+        - fromFieldPath: spec.location
+          toFieldPath: spec.forProvider.location
+      connectionDetails:
+        - type: FromFieldPath
+          name: bucketName
+          fromFieldPath: metadata.annotations[crossplane.io/external-name]
+    - name: serviceaccount
+      base:
+        apiVersion: cloudplatform.gcp.upbound.io/v1beta1
+        kind: ServiceAccount
+        spec:
+          forProvider: {}
+      patches:
+        - type: CombineFromComposite
+          toFieldPath: spec.forProvider.description
+          policy:
+            fromFieldPath: Required
+          combine:
+            variables:
+              - fromFieldPath: spec.claimRef.namespace
+              - fromFieldPath: spec.claimRef.name
+            strategy: string
+            string:
+              fmt: "%s/%s"
+        - type: ToCompositeFieldPath
+          fromFieldPath: status.atProvider.email
+          toFieldPath: status.serviceAccountEmail
+          policy:
+            fromFieldPath: Required
+    - name: serviceaccountkey
+      base:
+        apiVersion: cloudplatform.gcp.upbound.io/v1beta1
+        kind: ServiceAccountKey
+        spec:
+          forProvider:
+            publicKeyType: TYPE_X509_PEM_FILE
+            serviceAccountIdSelector:
+              matchControllerRef: true
+          writeConnectionSecretToRef:
+            namespace: heroku
+      patches:
+        - type: CombineFromComposite
+          combine:
+            variables:
+              - fromFieldPath: metadata.uid
+            strategy: string
+            string:
+              fmt: "%s-serviceaccountkey"
+          toFieldPath: spec.writeConnectionSecretToRef.name
+          policy:
+            fromFieldPath: Required
+      connectionDetails:
+        - name: googleCredentialsJSON
+          fromConnectionSecretKey: private_key
+    - name: add-sa-to-bucket
+      base:
+        apiVersion: storage.gcp.upbound.io/v1beta1
+        kind: BucketIAMMember
+        spec:
+          forProvider:
+            bucketSelector:
+              matchControllerRef: true
+            role: roles/storage.objectAdmin
+      patches:
+        - type: CombineFromComposite
+          combine:
+            variables:
+              - fromFieldPath: status.serviceAccountEmail
+            strategy: string
+            string:
+              fmt: "serviceAccount:%s"
+          toFieldPath: spec.forProvider.member
+          policy:
+            fromFieldPath: Required
+    - name: keyring
+      base:
+        apiVersion: kms.gcp.upbound.io/v1beta1
+        kind: KeyRing
+        spec:
+          forProvider: {}
+      patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.location
+          toFieldPath: spec.forProvider.location
+    - name: cryptokey
+      base:
+        apiVersion: kms.gcp.upbound.io/v1beta1
+        kind: CryptoKey
+        spec:
+          forProvider:
+            destroyScheduledDuration: 86400s
+            keyRingSelector:
+              matchControllerRef: true
+            rotationPeriod: 100000s
+      patches:
+        - type: ToCompositeFieldPath
+          fromFieldPath: status.atProvider.id
+          toFieldPath: status.kmsKeyId
+          policy:
+            fromFieldPath: Required
+    - name: add-sa-to-cryptokey
+      base:
+        apiVersion: kms.gcp.upbound.io/v1beta1
+        kind: CryptoKeyIAMMember
+        spec:
+          forProvider:
+            cryptoKeyIdSelector:
+              matchControllerRef: true
+            role: roles/cloudkms.cryptoKeyEncrypterDecrypter
+      patches:
+        - type: CombineFromComposite
+          combine:
+            variables:
+              - fromFieldPath: status.serviceAccountEmail
+            strategy: string
+            string:
+              fmt: "serviceAccount:%s"
+          toFieldPath: spec.forProvider.member
+          policy:
+            fromFieldPath: Required

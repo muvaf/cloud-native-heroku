@@ -1,5 +1,13 @@
 # Installation
 
+In this tutorial, we will:
+* Create a new Backstage application.
+* Create a new local Kubernetes cluster.
+* Install ArgoCD and Crossplane to the cluster.
+* Create a GCP Service Account and gave it the necessary permissions to
+  create encrypted buckets.
+* Configure Crossplane to use the GCP Service Account with minimal permissions.
+
 ## Pre-requisites
 
 Backstage:
@@ -50,12 +58,14 @@ Run!
 yarn dev
 ```
 
+![Backstage](./assets/backstage-initial.png)
+
 #### Github Integration
 
 Github Apps is the best way to integrate with GitHub and will let you use Github
 users in your auth story but it's a bit cumbersome. So, we will just give a
-personal access token to Backstage and it will use that for all of its Github
-operations.
+personal access token to Backstage and it will use that token for all of its
+Github operations.
 
 1. Create a token in https://github.com/settings/tokens/new with all `repo` and
    `workflow` permissions.
@@ -90,8 +100,9 @@ tutorial, so every restart of the Backstage app will get us back to scratch.
 
 We'd like to use in-memory sqlite for brevity and we need to enable template
 importing, so your **full** `app-config.production.yaml`, which is used by 
-`yarn build`should look like the following:
+`yarn build` should look like the following:
 ```yaml
+# The FULL content of app-config.production.yaml in your backstage project.
 app:
   baseUrl: http://127.0.0.1:7007
 
@@ -128,6 +139,7 @@ yarn build-image --tag muvaf/backstage-demo:v0.1.0
 Load the image into our `kind` cluster so that it can be used in a `Pod` without
 having to access an external image registry.
 ```bash
+# Pre-load the image so that we don't have to push to a registry and pull back.
 kind load docker-image muvaf/backstage-demo:v0.1.0
 ```
 
@@ -136,6 +148,7 @@ Kubernetes manifests. Firstly, you need to create a `Secret` that holds our
 Github personal access token.
 
 ```bash
+# You need to run this command in the terminal you exported GITHUB_TOKEN variable.
 cat <<EOF | kubectl apply -f -
 apiVersion: v1
 kind: Secret
@@ -150,6 +163,7 @@ EOF
 
 Now, let's deploy our Backstage app!
 ```yaml
+# cat <<EOF | kubectl apply -f - (then Shift+Enter, paste the content, Shift+Enter, EOF, Enter)
 apiVersion: v1
 kind: Service
 metadata:
@@ -221,11 +235,12 @@ continuously sync those manifests to the application cluster.
 
 Install ArgoCD to our cluster:
 ```bash
-# kubectl is not able to change SA namespace given in ClusterRoleBinding.
+# kubectl is not able to change ServiceAccount namespace given in
+# ClusterRoleBinding so we have to replace it with sed.
 kubectl create -n heroku -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml --dry-run -o yaml | \
-sed 's/namespace: argocd/namespace: heroku/g' | \
-sed 's/imagePullPolicy: Always/imagePullPolicy: IfNotPresent/g' | \
-kubectl apply -f -
+  sed 's/namespace: argocd/namespace: heroku/g' | \
+  sed 's/imagePullPolicy: Always/imagePullPolicy: IfNotPresent/g' | \
+  kubectl apply -f -
 ```
 
 Wait for pods to become ready for admin password to be generated:
@@ -255,15 +270,14 @@ helm install crossplane --namespace heroku crossplane-stable/crossplane --wait
 We are going to provision cloud infrastructure from Google Cloud. We need to
 install a Crossplane provider to do that.
 
-```bash
-cat <<EOF | kubectl apply -f -
+```yaml
+# cat <<EOF | kubectl apply -f - (then Shift+Enter, paste the content, Shift+Enter, EOF, Enter)
 apiVersion: pkg.crossplane.io/v1
 kind: Provider
 metadata:
   name: provider-gcp
 spec:
   package: xpkg.upbound.io/upbound/provider-gcp:v0.16.0
-EOF
 ```
 
 Wait till the provider pod comes up.
@@ -271,10 +285,85 @@ Wait till the provider pod comes up.
 kubectl get pods -w
 ```
 
-Next, we need to add our cloud credentials for GCP provider to use.
+Next, we need to add our cloud credentials for GCP provider to use. The
+following is the minimum permission definition that is required to create an
+encrypted bucket. We can create a new GCP Role with that file to be assigned
+to a GCP Service Account to be used by Crossplane.
 
+Let's write this to a file named `permissions.yaml`.
+```yaml
+# cat <<EOF > permissions.yaml (then Shift+Enter, paste the content, Shift+Enter, EOF, Enter)
+title: "Encrypted Bucket"
+description: "Permissions necessary to create an encrypted bucket."
+stage: "ALPHA"
+includedPermissions:
+- storage.buckets.create
+- storage.buckets.createTagBinding
+- storage.buckets.delete
+- storage.buckets.deleteTagBinding
+- storage.buckets.get
+- storage.buckets.getIamPolicy
+- storage.buckets.setIamPolicy
+- storage.buckets.update
+- storage.objects.list
+- storage.objects.delete
+- iam.serviceAccounts.create
+- iam.serviceAccounts.delete
+- iam.serviceAccounts.get
+- iam.serviceAccounts.update
+- iam.serviceAccountKeys.create
+- iam.serviceAccountKeys.delete
+- iam.serviceAccountKeys.get
+- cloudkms.keyRings.create
+- cloudkms.keyRings.createTagBinding
+- cloudkms.keyRings.deleteTagBinding
+- cloudkms.keyRings.get
+- cloudkms.cryptoKeys.create
+- cloudkms.cryptoKeys.get
+- cloudkms.cryptoKeys.getIamPolicy
+- cloudkms.cryptoKeys.setIamPolicy
+- cloudkms.cryptoKeys.update
+- cloudkms.cryptoKeyVersions.list
+- cloudkms.cryptoKeyVersions.destroy
+```
+
+Create a new GCP Role with the above permissions:
 ```bash
-cat <<EOF | kubectl apply -f -
+export GCP_PROJECT_ID="my-project-name"
+gcloud iam roles create encrypted_bucket --project="${GCP_PROJECT_ID}" \
+  --file=permissions.yaml
+```
+
+Create a GCP Service Account and assign this new role:
+```bash
+gcloud iam service-accounts create cloud-native-heroku-sa \
+  --description="To be used in Cloud Cative Heroku" \
+  --display-name="Cloud Native Heroku SA"
+```
+```bash
+# Assumes GCP_PROJECT_ID is available
+gcloud projects add-iam-policy-binding "${GCP_PROJECT_ID}" \
+  --member="serviceAccount:cloud-native-heroku-sa@${GCP_PROJECT_ID}.iam.gserviceaccount.com" \
+  --role="projects/${GCP_PROJECT_ID}/roles/encrypted_bucket"
+```
+
+Our GCP Service Account is ready. Let's create a private key that we can give to
+our GCP Provider to use.
+```bash
+# Assumes GCP_PROJECT_ID is available
+gcloud iam service-accounts keys create /tmp/creds.json \
+  --iam-account="cloud-native-heroku-sa@${GCP_PROJECT_ID}.iam.gserviceaccount.com"
+```
+
+Create a Kubernetes `Secret` with the credentials.
+```bash
+kubectl -n heroku create secret generic gcp-creds \
+  --from-file=creds=/tmp/creds.json
+```
+
+Use it in the configuration of the provider.
+```yaml
+# cat <<EOF | kubectl apply -f - (then Shift+Enter, paste the content, Shift+Enter, EOF, Enter)
 apiVersion: gcp.upbound.io/v1beta1
 kind: ProviderConfig
 metadata:
@@ -287,20 +376,9 @@ spec:
       namespace: heroku
       name: gcp-creds
       key: creds
-EOF
 ```
 
-You need to have your GCP Service Account token JSON to be available in
-`BASE64_ENCODED_SA_JSON` environment variable as base64 encoded. It should have
-Crypto Key and Bucket permissions at the very least.
-```bash
-cat <<EOF | kubectl apply -f -
-apiVersion: v1
-kind: Secret
-metadata:
-  name: gcp-creds
-  namespace: heroku
-stringData:
-  creds: ${BASE64_ENCODED_SA_JSON}
-EOF
-```
+Done!
+
+Jump to the [next tutorial](01-hello-world-backstage.md) that will get you
+to create a Hello World Backstage application.

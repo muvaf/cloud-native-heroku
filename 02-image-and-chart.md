@@ -3,13 +3,24 @@
 In this template we will add image building capabilities and a Helm chart that
 can be deployed to a cluster to deploy our application.
 
+In this tutorial, we will:
+* Create a new software template with a Docker image and Helm chart,
+* Create a continuous integration pipeline to build and publish the image and
+  chart to Github Container Registry,
+* Install the software instance we created using the new template.
+
+> You can find the final template for this tutorial in the
+> [templates/02-image-and-chart](templates/02-image-and-chart) folder.
+
 Copy the earlier template to make changes.
 ```bash
-cp -a templates/02-hello-world templates/03-image-and-chart
+# We are in the template repo, i.e. {your username}/cloud-native-heroku on Github.
+cp -a templates/01-hello-world templates/02-image-and-chart
 ```
 
 Change the `metadata` of `template.yaml`
 ```yaml
+# Change for the content in templates/02-image-and-chart/template.yaml
 metadata:
   name: hello-world-on-kubernetes
   title: Hello World on Kubernetes
@@ -17,7 +28,7 @@ metadata:
 
 Create a `Dockerfile` for our image.
 ```dockerfile
-# Content of templates/03-image-and-chart/skeleton/Dockerfile
+# Content of templates/02-image-and-chart/skeleton/Dockerfile
 FROM node:16-alpine
 
 WORKDIR /usr/src/app
@@ -31,27 +42,34 @@ CMD [ "node", "server.js" ]
 
 Let's give it a try to make sure it's all tight.
 ```bash
-docker build --tag hello:v0.1.0 .
+# We are in the template repo, i.e. {your username}/cloud-native-heroku on Github.
+docker build --tag hello:v0.1.0 templates/02-image-and-chart/skeleton
 ```
 ```bash
 docker run -p 8080:8080 hello:v0.1.0
 ```
 
-If you see the page at http://127.0.0.1:8080, congrats! 🎉
+Visit http://127.0.0.1:8080, and you should see a page with the following
+because we deployed the template itself:
+```
+Hello World! My name is ${{ values.serviceName }} and my owner is ${{ values.owner }}
+```
 
 Let's move on to adding a Helm chart.
 ```bash
-mkdir -p templates/03-image-and-chart/skeleton/chart
+# We are in the template repo, i.e. {your username}/cloud-native-heroku on Github.
+mkdir -p templates/02-image-and-chart/skeleton/chart
 ```
 It will have chart metadata and basic `Deployment` and `Service` definitions.
 ```bash
-mkdir -p templates/03-image-and-chart/skeleton/chart/templates
+# We are in the template repo, i.e. {your username}/cloud-native-heroku on Github.
+mkdir -p templates/02-image-and-chart/skeleton/chart/templates
 ```
 
 As you will notice, we need to use `{% raw %}` to open and `{% endraw %}` to
 close what Backstage shouldn't touch so that Helm templates are not considered.
 ```yaml
-# Content of templates/03-image-and-chart/skeleton/chart/Chart.yaml
+# Content of templates/02-image-and-chart/skeleton/chart/Chart.yaml
 apiVersion: v2
 name: ${{ values.githubRepositoryName }}-chart
 description: A Helm chart for ${{ values.serviceName }} owned by ${{ values.owner }}
@@ -60,13 +78,13 @@ version: 0.1.0
 appVersion: "1.16.0"
 ```
 ```yaml
-# Content of templates/03-image-and-chart/skeleton/chart/values.yaml
+# Content of templates/02-image-and-chart/skeleton/chart/values.yaml
 image:
   # To be replaced in-place before publishing or installation.
   tag: "%%TAG%%"
 ```
 ```yaml
-# Content of templates/03-image-and-chart/skeleton/chart/templates/service.yaml
+# Content of templates/02-image-and-chart/skeleton/chart/templates/service.yaml
 apiVersion: v1
 kind: Service
 metadata:
@@ -107,10 +125,11 @@ Container Registry (GHCR).
 
 Create the following file in `.github/workflows/ci.yaml`
 ```bash
-mkdir -p templates/03-image-and-chart/.github/workflows
+# We are in the template repo, i.e. {your username}/cloud-native-heroku on Github.
+mkdir -p templates/02-image-and-chart/skeleton/.github/workflows
 ```
 ```yaml
-# Content of templates/03-image-and-chart/skeleton/.github/workflows/ci.yaml
+# Content of templates/02-image-and-chart/skeleton/.github/workflows/ci.yaml
 {% raw %}
 name: Continuous Integration
 
@@ -182,23 +201,32 @@ jobs:
 ```
 
 Once all done, create a new commit and push it.
+```bash
+# We are in the template repo, i.e. {your username}/cloud-native-heroku on Github.
+git add .
+git commit -s -m "templates: add 02-image-and-chart"
+git push
+```
 
-Add our new template to Backstage in http://127.0.0.1:7007/catalog-import
+Add our new template to Backstage in `http://127.0.0.1:7007/catalog-import`
 by providing the path to our new `template.yaml` file in Github.
 ```
-https://github.com/muvaf/cloud-native-heroku/blob/main/templates/03-image-and-chart/template.yaml
+https://github.com/muvaf/cloud-native-heroku/blob/main/templates/02-image-and-chart/template.yaml
 ```
 
-Go back to creation page and try out our new software template. Once Backstage
-is done, you should see a Github Action your repo running and it will result in
-two container images pushed.
+Go back to creation page and try out our new software template by **creating a
+new software instance** in `http://127.0.0.1:7007/create`.
 
-![Github packages example](assets/github-packages.png)
+Once Backstage is done, you should see a Github Action your new repo running and
+it will result in two container images pushed in the new GitHub repository.
+
+![Github packages example](assets/packages-pushed.png)
 
 Well, let's give it a try!
 
 Click on the chart package and get the full image path to install with Helm.
 ```bash
+# Do not forget to change the path to your own chart image, i.e. "ghcr.io/{github user}/{repo}-chart"
 helm -n testing install helloworld oci://ghcr.io/muvaf/muvaf-kubecon-testing-chart --version 9.9.9 --create-namespace --wait
 ```
 ```bash
@@ -206,12 +234,15 @@ kubectl get pods -n testing
 kubectl get services -n testing
 ```
 ```bash
-kubectl port-forward --namespace=testing svc/hello-world 9090:80
+kubectl port-forward --namespace=testing svc/hello-world 8080:80
 ```
 
-If you see the usual page, congrats! 🎉
+If you see the usual page on `127.0.0.1:8080`, congrats! 🎉
 
 Clean up.
 ```bash
 kubectl delete namespace testing
 ```
+
+Jump to the [next tutorial](03-argocd.md) that will add a continuous delivery
+pipeline to our software instance using ArgoCD.
