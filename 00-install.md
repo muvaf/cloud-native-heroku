@@ -380,5 +380,5 @@ spec:
 
 Done!
 
-Jump to the [next tutorial](02-hello-world-backstage.md) that will get you
+Jump to the [next tutorial](01-hello-world-backstage.md) that will get you
 to create a Hello World Backstage application.

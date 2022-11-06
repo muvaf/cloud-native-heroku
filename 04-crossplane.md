@@ -476,4 +476,4 @@ If all things above happened, congratulate yourself! 🎉
 ![ArgoCD provisioned Crossplane resources](assets/argocd-provisioned-bucket.png)
 ![Logs of applications operating on bucket provisioned by Crossplane](assets/bucket-helloworld-logs.png)
 
-Jump to the [next steps](06-next-steps.md) page to see what you can do next!
+Jump to the [next steps](05-next-steps.md) page to see what you can do next!

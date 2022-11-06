@@ -180,5 +180,5 @@ npm start
 
 If you see a page in http://127.0.0.1:8080 , congrats! 🎉
 
-Jump to the [next tutorial](03-image-and-chart.md) to learn how to add a pipeline
+Jump to the [next tutorial](02-image-and-chart.md) to learn how to add a pipeline
 to build images for our application and Helm chart using GitHub Actions.

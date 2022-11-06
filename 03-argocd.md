@@ -208,7 +208,7 @@ If all things above happened, congratulate yourself! 🎉
 
 ![ArgoCD example screen](assets/argocd-deployed.png)
 
-Jump to the [next tutorial](05-crossplane.md) that will show you how to create
+Jump to the [next tutorial](04-crossplane.md) that will show you how to create
 your own infrastructure API and use it in your templates so that software instances
 can request infrastructure resources like GCP bucket.
 

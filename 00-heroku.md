@@ -65,5 +65,5 @@ depending on which plugin you choose to use.
 
 ![Heroku addons](assets/heroku-addons.png)
 
-Let's see how we can build it in cloud native way! Jump to the [next tutorial](01-install.md)
+Let's see how we can build it in cloud native way! Jump to the [next tutorial](00-install.md)
 that will get you started.

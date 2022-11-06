@@ -244,5 +244,5 @@ Clean up.
 kubectl delete namespace testing
 ```
 
-Jump to the [next tutorial](04-argocd.md) that will add a continuous delivery
+Jump to the [next tutorial](03-argocd.md) that will add a continuous delivery
 pipeline to our software instance using ArgoCD.
