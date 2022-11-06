@@ -210,6 +210,9 @@ In this tutorial:
 * Used the custom action in a template to create a new service that is deployed
   to the cluster.
 
+Jump to the [next tutorial](05-crossplane.md) that will show you how to create
+your own infrastructure API and use it in your templates so that software instances
+can request infrastructure resources like GCP bucket.
 
 [writing-custom-actions]: https://backstage.io/docs/features/software-templates/writing-custom-actions
 [npm-pkg]: https://www.npmjs.com/package/@muvaf/create-argocd-application

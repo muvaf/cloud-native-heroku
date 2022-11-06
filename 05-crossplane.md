@@ -477,3 +477,5 @@ In this tutorial:
   Platform to back that API.
 * We added our new API to our Backstage software template and used it to create
   a new service.
+
+Jump to the [next steps](06-next-steps.md) page to see what you can do next!

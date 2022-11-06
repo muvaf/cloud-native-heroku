@@ -371,3 +371,16 @@ spec:
 ```
 
 Done!
+
+# Recap
+
+In this tutorial:
+* We created a new Backstage application.
+* We created a new local Kubernetes cluster.
+* We installed ArgoCD and Crossplane to the cluster.
+* We created a GCP Service Account and gave it the necessary permissions to
+  create encrypted buckets.
+* We configured Crossplane to use the GCP Service Account with minimal permissions.
+
+Jump to the [next tutorial](02-hello-world-backstage.md) that will get you
+to create a Hello World Backstage application.

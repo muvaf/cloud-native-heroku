@@ -1,10 +1,10 @@
 {
-    "name": "hello-world",
-    "version": "1.0.0",
-    "description": "Kubecon NA 2022 - Cloud Native Heroku",
-    "author": "First Last <first.last@example.com>",
-    "main": "server.js",
-    "scripts": {
-      "start": "node server.js"
-    }
+  "name": "hello-world",
+  "version": "1.0.0",
+  "description": "Kubecon NA 2022 - Cloud Native Heroku",
+  "author": "First Last <first.last@example.com>",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
   }
+}

@@ -245,3 +245,6 @@ In this tutorial:
 * Created a continuous integration pipeline to build and publish the image and
   chart to Github Container Registry,
 * Installed the software instance we created using the new template.
+
+Jump to the [next tutorial](04-argocd.md) that will add a continuous delivery
+pipeline to our software instance using ArgoCD.
