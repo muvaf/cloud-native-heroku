@@ -21,6 +21,6 @@ Feel free to drop a line to me at [Twitter][twitter] or `muvaf` at
 
 
 [talk-link]:
-    https://kccncna2022.sched.com/event/b0d8e5d397fe9a2e61ff0434524d3af2
+    https://www.youtube.com/watch?v=3Aw60VXVMu8
 [slack]: https://slack.crossplane.io/
 [twitter]: https://twitter.com/muvaffakonus
